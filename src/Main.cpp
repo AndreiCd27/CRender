@@ -3,7 +3,6 @@
 const int WINDOW_WIDTH = 1200;
 const int WINDOW_HEIGHT = 800;
 const char* WINDOW_TITLE = "window";
-const float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
 
 #include "Engine3D.h"
 

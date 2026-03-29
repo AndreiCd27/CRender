@@ -19,6 +19,8 @@ endif()
 
 add_subdirectory(Libraries/include/glm)
 
+add_subdirectory(Libraries/glfw)
+
 # Libraries
 add_library(glad)
 target_sources(glad PRIVATE src/glad.c)
@@ -41,10 +43,10 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE Libraries/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     glad 
-    glfw3
     OpenGL::GL 
     ${CMAKE_DL_LIBS}
 )
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 # Resources + Shaders
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
