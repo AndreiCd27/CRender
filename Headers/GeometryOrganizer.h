@@ -78,7 +78,7 @@ private:
 	uint16_t TileX, TileZ;
 	uint16_t Level = 0;
 
-	Tile* Divisions[2][2] = { nullptr };
+	Tile* Divisions[2][2] = { {nullptr} };
 
 	std::vector<int> RelatedHandleIDs;
 
@@ -93,7 +93,7 @@ public:
 	std::vector<Tile*> RecurseInTiles();
 	void RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs);
 
-	const int GetTileID() const;
+	int GetTileID() const;
 
 	const std::vector<int>& GetRelatedHandleIDs();
 	void PushHandleID(int HandleID, ArrayOrganizer<InstanceData>& insArrayOrg);

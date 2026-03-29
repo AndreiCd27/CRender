@@ -71,37 +71,20 @@ int Engine3D::getDrawStyle(const char* style) {
 
 void Engine3D::setupShaders() {
 
-	//if (UserCamera == nullptr) { std::cerr << "Unable to setup Shader before Camera Object, please call setCamera() first \n"; return; }
-
 	shaderProgram.Setup("Shaders/default.vert", "Shaders/default.frag");
 
 	instanceProgram.Setup("Shaders/instance.vert", "Shaders/instance.frag");
-
-	//std::cout << "Shader setup complete! \n";
-
-	// DEFAULT SHADER PROGRAM
-
-	//lightDirUnifLoc = glGetUniformLocation(shaderProgram.ID, "lightDirection");
-
-	// INSTANCE SHADER PROGRAM
-
-	//lightDirUnifLoc = glGetUniformLocation(instanceProgram.ID, "lightDirection");
 
 	glEnable(GL_DEPTH_TEST);
 
 }
 
 void Engine3D::setupGeometryArrayObjects(const int drawStyle = GL_STATIC_DRAW) {
-	//std::cout << "VAO Setup \n";
+	
 	VAO_1.Setup();
 
 	VAO_1.Bind();
-	//std::cout << "VAO Setup and Binding complete \n";
-	/*
-	std::vector<AVertex>& worldVertices = MainScene.getVertStoreLocation().getWorldVertices();
 
-	std::vector<GLuint>& VertIndicies = MainScene.getVertStoreLocation().getVertIndicies();
-	*/
 	std::cout << "Got vertex and indicies buffers \n";
 
 	std::vector<AVertex>& vert = MainScene.GetVBO_Organizer().GetMultiArray();
@@ -315,9 +298,7 @@ void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
 	glUniform1i(shadowMapLocation, 0);
 
 	//glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
-
-	
-
+	// 
 	// START TO DRAW INSTANCES
 
 	instanceProgram.Activate();
@@ -353,13 +334,6 @@ Tile* Engine3D::getVisibleCameraFrustum() {
 }
 
 void Engine3D::EngineTerminate() {
-
-	/*
-	//Delete meshes
-	for (auto& MeshObj : MainScene.getMeshes()) {
-		delete MeshObj;
-	}
-	*/
 
 	//Delete our VAOs, VBOs, EBOs
 	VAO_1.Delete();
@@ -398,13 +372,13 @@ Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {
 
 		//std::cout <<"Mesh coord count: " << coords.size() << " trig count: " << tris.size()<<"\n";
 
-		for (int i = 0; i < totalIndices; i++) {
+		for (int i = 0; i < (int)totalIndices; i++) {
 			int STLfileIndex = tris[i];
 
 			if (uniqueVert.find(STLfileIndex) == uniqueVert.end()) {
 				// Found a unique vertex that is not a duplicate
 				// Add to our map
-				uniqueVert[STLfileIndex] = vert.size();
+				uniqueVert[STLfileIndex] = (GLuint)vert.size();
 
 				int coordINDEX = 3 * STLfileIndex;
 				float* c = &coords[coordINDEX];

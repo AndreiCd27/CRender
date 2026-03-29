@@ -105,15 +105,14 @@ public:
 		ID_TO_INDEX[HandleID] = (int)Handles.size() - 1;
 		INDEX_TO_ID.push_back(HandleID);
 
-		//std::cout << "Handle: " << HandleID << " Offset: " << h.offset << "\n";
 	}
 
-	void MoveBefore(int beforeHandleID, int HandleID) {
+	//void MoveBefore(int beforeHandleID, int HandleID) {
 		//TODO
-	}
-	void MoveAfter(int afterHandleID, int HandleID) {
+	//}
+	//void MoveAfter(int afterHandleID, int HandleID) {
 		//TODO
-	}
+	//}
 	void MoveToEnd(int HandleID) {
 
 		int HandleIndex = ID_TO_INDEX[HandleID]; // (OLD INDEX)
@@ -146,9 +145,9 @@ public:
 
 		ID_TO_INDEX[HandleID] = (int)Handles.size() - 1;
 	}
-	void MoveToStart(int HandleID) {
+	//void MoveToStart(int HandleID) {
 		//TODO
-	}
+	//}
 
 	void Push(int HandleID, T data) {
 
@@ -197,7 +196,6 @@ public:
 
 		std::copy(multidata.begin(), multidata.end(), Array.begin() + Handles[HandleIndex].offset + h.size);
 		Handles[HandleIndex].size += (int)multidata.size();
-		//std::cout << " [MultiArray.h PushMultipleData()]\n Pushed " << multidata.size() << " elements into Array (OLD SIZE: " << oldSize << ") NEW SIZE: " << Array.size()<<"\n";
 	}
 	
 	void print() {
@@ -232,17 +230,6 @@ public:
 	bool ContainsHandle(int HandleID) {
 		return !(ID_TO_INDEX.find(HandleID) == ID_TO_INDEX.end());
 	}
-	/*
-	const int GetSizeBetweenHandles(int HandleID_0, int HandleID_1) {
-		int I_START = ID_TO_INDEX[HandleID_0];
-		int I_END = ID_TO_INDEX[HandleID_1];
-		int SIZE = Handles[I_END].offset - Handles[I_START].offset + Handles[I_END].size;
-		if (SIZE < 0) {
-			throw ArrayOrganizerException("Handles given are not in order", 1);
-		}
-		return SIZE;
-	}
-	*/
 
 	std::vector<Handle>& GetAllHandles() {
 		return Handles;

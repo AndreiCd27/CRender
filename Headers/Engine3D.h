@@ -42,8 +42,6 @@ private:
 
 	GLuint shadowMapLocation;
 
-	GLuint lightDirUnifLoc;
-
 	// Appearance
 	struct {
 		float R = 0.2f;
