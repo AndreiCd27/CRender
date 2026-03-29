@@ -19,12 +19,12 @@ int main() {
 
 	// HERE WE CREATE OUR OBJECTS /////////////////////////////////////////////////
 	
-	Blueprint* humanMesh = engine.LoadSTLGeomFile("resources/BASEmodel.stl", 20.0f);
+	Blueprint* humanMesh = engine.LoadSTLGeomFile("resources/BASEmodel.stl", 12.0f);
 	if (humanMesh) {
 		std::cout << "Created: Human \n";
 		for (int i = 0; i < 10; i++) {
 			Instance* human = engine.getScene()->CreateInstance(humanMesh, AVector3());
-			human->SetPosition(AVector3(-160.0f + i * 40.0f, 50.0f, 5.0f));
+			human->SetPosition(AVector3(-160.0f + i * 40.0f, 20.0f, 5.0f));
 			human->SetColor(i * 20, 255 - i * 20, 0, 255);
 			human->SetRotation(AVector3(-90.0f, 0.0f, 0.0f));
 		}
@@ -60,21 +60,10 @@ int main() {
 
 	engine.setupShaders(); //Uses Camera Class and Mesh Instances
 
-	std::cout << "VBO Total Bytes: " << engine.getScene()->GetVBO_Organizer().GetMultiArray().size() * sizeof(AVertex) << "\n";
-	std::cout << "EBO Total Bytes: " << engine.getScene()->GetEBO_Organizer().GetMultiArray().size() * sizeof(GLuint) << "\n";
-
-
 	engine.setupGeometryArrayObjects(engine.getDrawStyle("dynamic"));
 	engine.setupInstanceVBO();
 
 	std::cout << "Shaders created\n";
-
-	// TEST: engine.getScene()->GetTileMeshes(engine.getScene()->WorldRoot->Divisions[1][1]);
-	
-	//engine.setupInstanceVBO(cntOfObj);
-
-	
-	//glDisable(GL_CULL_FACE);
 
 	float _deltaTimeForTIMER = 1.0f / 10.0f;
 	double prevTime = glfwGetTime();
@@ -87,11 +76,6 @@ int main() {
 	double timeDifference;
 	int frameCounter = 0;
 	const double FPSsampleTime = 1.0f / 20.0f;
-
-	std::cout << "Instances Size: " << engine.getScene()->GetInstanceOrganizer().GetMultiArray().size() << std::endl;
-	std::cout << "VBO Size: " << engine.getScene()->GetVBO_Organizer().GetMultiArray().size() << std::endl;
-	std::cout << "EBO Size: " << engine.getScene()->GetEBO_Organizer().GetMultiArray().size() << std::endl;
-
 
 	// MAIN GAME LOOP
 	while (!engine.windowShouldClose()) {
@@ -116,13 +100,8 @@ int main() {
 		if (currentTime - prevTime >= _deltaTimeForTIMER) {
 			//engine.DEBUG_showCameraVectors();
 			prevTime = currentTime;
-			/*
-			if (humanMesh) {
-				humanMesh->Rotation = AVector3((-(int)sqrt(ROT*20) % 360 - 180) * 1.0f, 
-					(ROT % 360 - 180) * 1.0f, (-ROT % 360 - 180) *1.0f);
-				humanMesh->UpdVectors();
-			}
-			*/
+
+			// Sky colors
 			float sinROT = sin((double)ROT / 1024.0f);
 			float cosROT = cos((double)ROT / 1024.0f);
 			engine.getCamera(true).Position = AVector3( 100.0f * cosROT, 100.0f * sinROT, 50.0f );

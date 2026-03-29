@@ -58,13 +58,11 @@ void Tile::DivideTile(uint16_t i, uint16_t j) {
 
 std::vector<Tile*> Tile::RecurseInTiles() {
 	static std::vector<Tile*> Tiles;
-	if (this != nullptr) {
-		Tiles.push_back(this);
-		this->Divisions[0][0]->RecurseInTiles();
-		this->Divisions[0][1]->RecurseInTiles();
-		this->Divisions[1][0]->RecurseInTiles();
-		this->Divisions[1][1]->RecurseInTiles();
-	}
+	Tiles.push_back(this);
+	if (this->Divisions[0][0] != nullptr) this->Divisions[0][0]->RecurseInTiles();
+	if (this->Divisions[0][1] != nullptr) this->Divisions[0][1]->RecurseInTiles();
+	if (this->Divisions[1][0] != nullptr) this->Divisions[1][0]->RecurseInTiles();
+	if (this->Divisions[1][1] != nullptr) this->Divisions[1][1]->RecurseInTiles();
 	return Tiles;
 }
 

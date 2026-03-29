@@ -36,7 +36,8 @@ add_executable(${PROJECT_NAME} src/Main.cpp src/Engine3D.cpp src/Camera.cpp src/
     src/GeometryLoader.cpp src/GeometryBasics.cpp src/Texture.cpp src/VBO.cpp src/EBO.cpp src/VAO.cpp src/shaderClass.cpp
     ${HEADER_FILES}
 )
-target_include_directories(${PROJECT_NAME} PRIVATE Headers Libraries/include)
+target_include_directories(${PROJECT_NAME} PRIVATE Headers)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE Libraries/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     glad 

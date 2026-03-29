@@ -32,6 +32,15 @@ void Engine3D::DEBUG_showCameraVectors() {
 	std::cout << UserCamera.Position.x << " " << UserCamera.Position.y << " " << UserCamera.Position.z<<"\n";
 	std::cout << UserCamera.Yaw <<" "<< UserCamera.Pitch << "\n";
 }
+void Engine3D::DEBUG_ArrayOrganizers() {
+
+	std::cout << "VBO Total Bytes: " << getScene()->GetVBO_Organizer().GetMultiArray().size() * sizeof(AVertex) << "\n";
+	std::cout << "EBO Total Bytes: " << getScene()->GetEBO_Organizer().GetMultiArray().size() * sizeof(GLuint) << "\n";
+
+	std::cout << "Instances Size: " << getScene()->GetInstanceOrganizer().GetMultiArray().size() << "\n";
+	std::cout << "VBO Size: " << getScene()->GetVBO_Organizer().GetMultiArray().size() << "\n";
+	std::cout << "EBO Size: " << getScene()->GetEBO_Organizer().GetMultiArray().size() << "\n";
+}
 
 int Engine3D::setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char * WINDOW_TITLE) {
 	// INITIALIZE GLFW

@@ -120,4 +120,5 @@ public:
 	Blueprint* CreateCube(float length);
 	
 	void DEBUG_showCameraVectors();
+	void DEBUG_ArrayOrganizers();
 };
