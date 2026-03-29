@@ -68,7 +68,7 @@ class Entity {
 	static int contor;
 	int EID;
 	std::string TagName = "";
-	bool Active = true;
+	
 protected:
 	Scene* ParentScene = nullptr;
 public:
