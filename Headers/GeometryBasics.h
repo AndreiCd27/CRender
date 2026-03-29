@@ -3,22 +3,6 @@
 
 #include "precompile.h"
 
-struct AColor3123 {
-	float r, g, b;
-};
-
-
-struct AVertex2132 { //48 bytes
-	float lx = 0.0f;
-	float hx = 0.0f;
-	float lz = 0.0f;
-	float hz = 0.0f;
-	float y = 0.0f;
-	float r, g, b;
-	float nx = 0.0f, ny = 0.0f, nz = 0.0f; //normal vector
-	float meshID = 0.0f;
-};
-
 class A_UV {
 public:
 	uint32_t UV = 0;

@@ -4,7 +4,7 @@
 
 int Entity::contor = 0;
 
-Entity::Entity(Scene* scene, std::string _TagName) : TagName(_TagName), Active(false) {
+Entity::Entity(Scene* scene, std::string _TagName) : TagName(_TagName) {
 	ParentScene = scene;
 	EID = contor;
 	contor++;
