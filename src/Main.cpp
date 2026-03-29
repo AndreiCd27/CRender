@@ -105,7 +105,7 @@ int main() {
 			float cosROT = cos((double)ROT / 1024.0f);
 			engine.getCamera(true).Position = AVector3( 100.0f * cosROT, 100.0f * sinROT, 50.0f );
 			float lightReflactance = std::max(0.0f, sinf((float)ROT / 512.0f));
-			float sunsetCoef = abs(cos((double)ROT / 512.0f)*1.5f);
+			float sunsetCoef = std::abs(cos((double)ROT / 512.0f)*1.5f);
 			engine.setBackground((sunsetCoef) * 0.25f * (lightReflactance + 0.25f), 
 				(lightReflactance + sunsetCoef / 2.0f) * 0.5f * (lightReflactance), 
 				lightReflactance, 1.0f);

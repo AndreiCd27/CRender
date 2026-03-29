@@ -9,7 +9,7 @@ bool Tile::DEBUG = false;
 
 unsigned int getCBits(double cd) {
 
-	unsigned int c = abs(cd);
+	unsigned int c = std::abs(cd);
 	unsigned int cBits = 0x80000000;
 	cd < 0 ? cBits = cBits - c : cBits = c & cBits;
 
