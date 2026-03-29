@@ -5,6 +5,8 @@
 const int Tile::shiftComponent = Blueprint::GetShiftComponent();
 int Tile::contor = 0;
 
+bool Tile::DEBUG = false;
+
 unsigned int getCBits(double cd) {
 
 	unsigned int c = abs(cd);
@@ -18,10 +20,9 @@ int TOTAL_C_COUNT = 0;
 int TOTAL_D_COUNT = 0;
 
 Tile::Tile(Tile* _Parent, uint16_t _TileX, uint16_t _TileZ, uint16_t _Level) {
-	//std::cout << "C tile " << _Level << "\n";
+	if (DEBUG) std::cout << "C tile " << _Level << "\n";
 	TileID = contor; contor++;
 	TOTAL_C_COUNT++;
-	//std::cout << "Created: " << TOTAL_C_COUNT << "\n";
 	Parent = _Parent; TileX = _TileX; TileZ = _TileZ; Level = _Level;
 	for (uint16_t i = 0; i < 2; i++) {
 		for (uint16_t j = 0; j < 2; j++) {
@@ -33,9 +34,8 @@ Tile::Tile(Tile* _Parent, uint16_t _TileX, uint16_t _TileZ, uint16_t _Level) {
 
 
 Tile::~Tile() {
-	//std::cout << "D tile " << Level << "\n";
+	if (DEBUG) std::cout << "D tile " << Level << "\n";
 	TOTAL_D_COUNT++;
-	//std::cout << "Destroyed: " << TOTAL_D_COUNT<<"\n";
 	for (int i = 0; i < 2; i++) {
 		for (int j = 0; j < 2; j++) {
 			delete Divisions[i][j];
@@ -111,12 +111,12 @@ Scene::Scene() {
 
 Scene::~Scene() {
 	if (WorldRoot != nullptr) delete WorldRoot;
-	for (int i = 0; i < Instances.size(); i++) {
+	for (int i = 0; i < (int)Instances.size(); i++) {
 		if (Instances[i] != nullptr) {
 			delete Instances[i];
 		}
 	}
-	for (int i = 0; i < Blueprints.size(); i++) {
+	for (int i = 0; i < (int)Blueprints.size(); i++) {
 		if (Blueprints[i] != nullptr) {
 			delete Blueprints[i];
 		}
@@ -141,12 +141,9 @@ Tile* Scene::FindTileForPosition(AVertex center, AVector3 Position) {
 
 		tile = tile->Divisions[bitX][bitZ];
 
-		//std::cout << bitX << bitZ << "|";
-
 		lvl++;
 		bin = bin >> 1;
 	}
-	//std::cout << "\n";
 	if (tile == nullptr) {
 		std::cout << "Tile not found \n";
 		return nullptr;
@@ -210,24 +207,6 @@ const GLuint* Scene::GetEBO_OrganizerPTR(int HandleID) {
 	return EBO_Organizer.GetPointerFromHandle(HandleID);
 }
 
-/*
-std::pair<const InstanceData*, int> Scene::GetInstanceOrganizerRange(int HandleID_0, int HandleID_1) {
-	return std::pair<const InstanceData*, int>(
-		GetInstanceOrganizerPTR(HandleID_0), InstanceOrganizer.GetSizeBetweenHandles(HandleID_0, HandleID_1)
-	);
-}
-std::pair<const AVertex*, int> Scene::GetVBO_OrganizerRange(int HandleID_0, int HandleID_1) {
-	return std::pair<const AVertex*, int>(
-		GetVBO_OrganizerPTR(HandleID_0), VBO_Organizer.GetSizeBetweenHandles(HandleID_0, HandleID_1)
-	);
-}
-std::pair<const GLuint*, int> Scene::GetEBO_OrganizerRange(int HandleID_0, int HandleID_1) {
-	return std::pair<const GLuint*, int>(
-		GetEBO_OrganizerPTR(HandleID_0), EBO_Organizer.GetSizeBetweenHandles(HandleID_0, HandleID_1)
-	);
-}
-*/
-
 void Scene::GenerateHandle(int HandleID, int TARGET, int capacity) {
 	if (TARGET == INSTANCE_ORGANIZER_TARGET) {
 		InstanceOrganizer.NewHandle(HandleID, capacity);
@@ -258,25 +237,16 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 	//GenerateHandle(generatedHandleID, VBO_ORGANIZER_TARGET, vertices.size());
 	//GenerateHandle(generatedHandleID, EBO_ORGANIZER_TARGET, indicies.size());
 
-	VBO_Organizer.NewHandle(generatedHandleID, vertices.size());
-	EBO_Organizer.NewHandle(generatedHandleID, indicies.size());
+	VBO_Organizer.NewHandle(generatedHandleID, (int)vertices.size());
+	EBO_Organizer.NewHandle(generatedHandleID, (int)indicies.size());
 
 	VBO_Organizer.PushMultipleData(generatedHandleID, vertices);
 	EBO_Organizer.PushMultipleData(generatedHandleID, indicies);
 
-	/* THIS DOES NOT WORK EITHER
-	for (AVertex& v : vertices) {
-		VBO_Organizer.Push(generatedHandleID, v);
-	}
-	for (GLuint& i : indicies) {
-		EBO_Organizer.Push(generatedHandleID, i);
-	}
-	*/
-
 	// Calculate Center
 
 	AVector3 vcenter = { 0.0f, 0.0f, 0.0f };
-	const float center_scalar = 1.0f / vertices.size();
+	const float center_scalar = 1.0f / (float)vertices.size();
 
 	for (AVertex& v : vertices) {
 		vcenter += v.POS;

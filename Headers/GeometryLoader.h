@@ -54,7 +54,7 @@ public:
 	int GetID();
 
 	AVertex Center;
-	static const int GetShiftComponent();
+	static int GetShiftComponent();
 
 	void SetColor(int R, int G, int B, int A);
 

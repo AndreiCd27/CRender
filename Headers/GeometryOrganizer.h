@@ -61,12 +61,6 @@ public:
 	const AVertex * GetVBO_OrganizerPTR(int HandleID);
 	const GLuint * GetEBO_OrganizerPTR(int HandleID);
 	
-	/*
-	std::pair<const InstanceData*, int> GetInstanceOrganizerRange(int HandleID_0, int HandleID_1);
-	std::pair<const AVertex*, int> GetVBO_OrganizerRange(int HandleID_0, int HandleID_1);
-	std::pair<const GLuint*, int> GetEBO_OrganizerRange(int HandleID_0, int HandleID_1);
-	*/
-
 	Handle GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET);
 
 	void GenerateHandle(int HandleID, int TARGET, int capacity);
@@ -75,6 +69,8 @@ public:
 class Tile {
 private:
 	static int contor;
+
+	static bool DEBUG;
 
 	int TileID;
 

@@ -62,7 +62,7 @@ int Engine3D::setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const c
 	return 1;
 }
 
-const int Engine3D::getDrawStyle(const char* style) {
+int Engine3D::getDrawStyle(const char* style) {
 	if (strcmp(style, "static") == 0) return GL_STATIC_DRAW;
 	if (strcmp(style, "stream") == 0) return GL_STREAM_DRAW;
 	if (strcmp(style, "dynamic") == 0) return GL_DYNAMIC_DRAW;
@@ -147,7 +147,7 @@ void Engine3D::setupInstanceVBO() {
 	// We need a new relative translation matrix every frame for every instance,
 	// Even though our camera view and proj matrix stay the same for every instance
 
-	int matarraysize = MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
 
 	glBufferData(GL_ARRAY_BUFFER, matarraysize * sizeof(InstanceData), NULL, GL_DYNAMIC_DRAW);
 
@@ -208,7 +208,7 @@ void Engine3D::registerCameraInput(float FOVdeg, float zNear, float zFar) {
 void Engine3D::DrawAllInstances() {
 	std::vector<int> handleIDsFromRoot;
 	MainScene.WorldRoot->RecurseInTilesOutputHandleIDs(handleIDsFromRoot);
-	for (int i = 0; i < handleIDsFromRoot.size(); i++) {
+	for (int i = 0; i < (int)handleIDsFromRoot.size(); i++) {
 		int HandleID = handleIDsFromRoot[i];
 
 		Handle InstH = MainScene.GetInstanceOrganizer().GetHandleData(HandleID);
@@ -217,7 +217,7 @@ void Engine3D::DrawAllInstances() {
 
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 		uint32_t stride = sizeof(InstanceData);
-		if (stride != 72) std::cout << "ALERT!";
+		
 		uintptr_t base = (uintptr_t)(InstH.offset * stride);
 		for (int j = 0; j < 4; j++) {
 			glEnableVertexAttribArray(4 + j);
@@ -274,7 +274,7 @@ void Engine3D::shadowPass() {
 	instanceProgram.Activate();
 	VAO_1.Bind();
 
-	int matarraysize = MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
 
@@ -323,7 +323,7 @@ void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
 	instanceProgram.Activate();
 	VAO_1.Bind();
 
-	int matarraysize = MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
 
@@ -396,7 +396,7 @@ Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {
 
 		const size_t totalIndices = tris.size();
 
-		std::cout <<"Mesh coord count: " << coords.size() << " trig count: " << tris.size()<<"\n";
+		//std::cout <<"Mesh coord count: " << coords.size() << " trig count: " << tris.size()<<"\n";
 
 		for (int i = 0; i < totalIndices; i++) {
 			int STLfileIndex = tris[i];
@@ -415,7 +415,7 @@ Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {
 			indicies.push_back(uniqueVert[STLfileIndex]);
 		}
 
-		std::cout << "Mesh created \n";
+		//std::cout << "Mesh created \n";
 
 		Blueprint::CalculateSurfaceNormals(vert, indicies);
 
@@ -435,7 +435,7 @@ Blueprint* Engine3D::CreatePrism(const std::vector<AVertex>& vertices, int Verte
 	std::vector<AVertex> V = vertices;
 	V.reserve(VertexNumber * 2);
 
-	if (vertices.size() < 3) { std::cout << "Mesh does not contain any triangles \n"; return nullptr; };
+	if ((int)vertices.size() < 3) { std::cout << "Mesh does not contain any triangles \n"; return nullptr; };
 
 	// 0 -> 1 -> 2
 	// |  / |  / |

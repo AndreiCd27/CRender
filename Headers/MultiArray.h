@@ -39,7 +39,7 @@ class ArrayOrganizer {
 		Handle& h = Handles[HandleIndex];
 		int capacityOld = h.capacity;
 
-		int arraySizeOld = Array.size();
+		int arraySizeOld = (int)Array.size();
 		Array.resize(arraySizeOld + capacityOld);
 
 		// std::copy_backward
@@ -59,7 +59,7 @@ class ArrayOrganizer {
 		auto to = Array.begin() + arraySizeOld;
 		std::copy_backward(from, to, Array.end());
 
-		for (int i = HandleIndex + 1; i < Handles.size(); i++) {
+		for (int i = HandleIndex + 1; i < (int)Handles.size(); i++) {
 			Handles[i].offset += capacityOld;
 		}
 		h.capacity <<= 1;
@@ -73,14 +73,14 @@ class ArrayOrganizer {
 		int capacityOld = h.capacity;
 		int capacityNew = h.capacity << pow;
 
-		int arraySizeOld = Array.size();
+		int arraySizeOld = (int)Array.size();
 		Array.resize(arraySizeOld + capacityNew - capacityOld);
 
 		auto from = Array.begin() + h.offset + capacityOld;
 		auto to = Array.begin() + arraySizeOld;
 		std::copy_backward(from, to, Array.end());
 
-		for (int i = HandleIndex + 1; i < Handles.size(); i++) {
+		for (int i = HandleIndex + 1; i < (int)Handles.size(); i++) {
 			Handles[i].offset += (capacityNew - capacityOld);
 		}
 		h.capacity = capacityNew;
@@ -102,10 +102,10 @@ public:
 
 		Array.resize(h_off + capacityPow2);
 
-		ID_TO_INDEX[HandleID] = Handles.size() - 1;
+		ID_TO_INDEX[HandleID] = (int)Handles.size() - 1;
 		INDEX_TO_ID.push_back(HandleID);
 
-		std::cout << "Handle: " << HandleID << " Offset: " << h.offset << "\n";
+		//std::cout << "Handle: " << HandleID << " Offset: " << h.offset << "\n";
 	}
 
 	void MoveBefore(int beforeHandleID, int HandleID) {
@@ -117,7 +117,7 @@ public:
 	void MoveToEnd(int HandleID) {
 
 		int HandleIndex = ID_TO_INDEX[HandleID]; // (OLD INDEX)
-		if (HandleIndex == Handles.size() - 1) return;
+		if (HandleIndex == (int)Handles.size() - 1) return;
 		Handle& h = Handles[HandleIndex];
 
 		std::vector<T> temp;
@@ -130,21 +130,21 @@ public:
 
 		std::copy(temp.begin(), temp.end(), Array.end() - h.capacity);
 
-		for (int i = HandleIndex + 1; i < Handles.size(); i++) {
+		for (int i = HandleIndex + 1; i < (int)Handles.size(); i++) {
 			Handles[i].offset -= h.capacity;
 			int iID = INDEX_TO_ID[i];
 			ID_TO_INDEX[iID] = i - 1;
 		}
 
 		Handle hcopy = h; // We copy h to prevent erase deleting our handle
-		hcopy.offset = Array.size() - hcopy.capacity;
+		hcopy.offset = (int)Array.size() - hcopy.capacity;
 
 		Handles.erase(Handles.begin() + HandleIndex);
 		INDEX_TO_ID.erase(INDEX_TO_ID.begin() + HandleIndex);
 		Handles.push_back(hcopy);
 		INDEX_TO_ID.push_back(HandleID);
 
-		ID_TO_INDEX[HandleID] = Handles.size() - 1;
+		ID_TO_INDEX[HandleID] = (int)Handles.size() - 1;
 	}
 	void MoveToStart(int HandleID) {
 		//TODO
@@ -169,12 +169,12 @@ public:
 
 		Handle h = Handles[HandleIndex];
 
-		int oldSize = Array.size();
+		int oldSize = (int)Array.size();
 
-		if ( h.size + multidata.size() > h.capacity ) {
+		if ( h.size + (int)multidata.size() > h.capacity ) {
 			int capacityTarget = h.capacity;
 			if (capacityTarget == 0) capacityTarget = multidata.size();
-			while (h.size + multidata.size() > capacityTarget) {
+			while (h.size + (int)multidata.size() > capacityTarget) {
 				capacityTarget <<= 1;
 				
 			}
@@ -182,12 +182,12 @@ public:
 			int incrrease = capacityTarget - h.capacity;
 			Array.resize(oldSize + incrrease);
 
-			if (HandleIndex < Handles.size() - 1) {
+			if (HandleIndex < (int)Handles.size() - 1) {
 				auto from = Array.begin() + h.offset + h.capacity;
 				auto to = Array.begin() + oldSize;
 				std::copy_backward(from, to, Array.end());
 
-				for (int i = HandleIndex + 1; i < Handles.size(); i++) {
+				for (int i = HandleIndex + 1; i < (int)Handles.size(); i++) {
 					Handles[i].offset += incrrease;
 				}
 			}
@@ -196,8 +196,8 @@ public:
 		}
 
 		std::copy(multidata.begin(), multidata.end(), Array.begin() + Handles[HandleIndex].offset + h.size);
-		Handles[HandleIndex].size += multidata.size();
-		std::cout << " [MultiArray.h PushMultipleData()]\n Pushed " << multidata.size() << " elements into Array (OLD SIZE: " << oldSize << ") NEW SIZE: " << Array.size()<<"\n";
+		Handles[HandleIndex].size += (int)multidata.size();
+		//std::cout << " [MultiArray.h PushMultipleData()]\n Pushed " << multidata.size() << " elements into Array (OLD SIZE: " << oldSize << ") NEW SIZE: " << Array.size()<<"\n";
 	}
 	
 	void print() {

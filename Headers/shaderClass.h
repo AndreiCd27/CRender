@@ -28,7 +28,7 @@ public:
 	void compileErrors(unsigned int shader, const char* type);
 
 	// Uniform methods
-	const GLuint GetUniformLocation(const std::string& uniformName);
+	GLuint GetUniformLocation(const std::string& uniformName);
 
 	void SetUniformMatrix4by4(const std::string& uniformName, glm::mat4 Mat4);
 	void SetUniformVector3(const std::string& uniformName, glm::vec3 Vec3);

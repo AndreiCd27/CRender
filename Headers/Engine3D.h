@@ -70,7 +70,7 @@ public:
 
 	void setCamera(float posX, float posY, float posZ, float yaw, float pitch);
 
-	const int getDrawStyle(const char* style);
+	int getDrawStyle(const char* style);
 
 	void setupShaders();
 

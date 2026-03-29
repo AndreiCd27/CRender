@@ -82,7 +82,7 @@ InstanceData::InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale)
 int Blueprint::contor = 0;
 const int Blueprint::safeBlueprintCount = 4095;
 
-const int Blueprint::GetShiftComponent() {
+int Blueprint::GetShiftComponent() {
 	return (int) log2l(Blueprint::safeBlueprintCount) + 1;
 }
 
@@ -108,11 +108,11 @@ void assignNormal(AVertex& v, glm::vec3 N) {
 }
 
 void Blueprint::CalculateSurfaceNormals(std::vector<AVertex>& worldVert, std::vector<GLuint>& indicies) {
-	for (int i = 0; i < indicies.size(); i++) {
+	for (int i = 0; i < (int)indicies.size(); i++) {
 		AVertex& v = worldVert[indicies[i]];
 		v.NORMAL = AVector3(0.0f, 0.0f, 0.0f);
 	}
-	for (int i = 0; i < (indicies.size() / 3) * 3; i += 3) {
+	for (int i = 0; i < (int)(indicies.size() / 3) * 3; i += 3) {
 		// We calculate the normal of that triangle face and forward them to every vertex of that face
 		AVertex& A = worldVert[indicies[i]];
 		AVertex& B = worldVert[indicies[i + 1]];
@@ -124,7 +124,7 @@ void Blueprint::CalculateSurfaceNormals(std::vector<AVertex>& worldVert, std::ve
 		assignNormal(B, cross);
 		assignNormal(C, cross);
 	}
-	for (int i = 0; i < indicies.size(); i++) {
+	for (int i = 0; i < (int)indicies.size(); i++) {
 		AVertex& v = worldVert[indicies[i]];
 		v.NORMAL = v.NORMAL.Normalize();
 	}
