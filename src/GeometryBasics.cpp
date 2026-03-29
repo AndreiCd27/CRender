@@ -35,7 +35,7 @@ AVector3 AVector3::operator^(const AVector3& dr) { //CROSS PRODUCT
 	};
 }
 AVector3 AVector3::Normalize() {
-	float dist = std::sqrtf(this->x * this->x + this->y * this->y + this->z * this->z);
+	float dist = std::sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
 	return { this->x / dist, this->y / dist, this->z / dist };
 }
 
