@@ -136,7 +136,7 @@ jobs:
         # Run through XVFB to be able to render on a screen (create window)
         run: |
           export LIBGL_ALWAYS_SOFTWARE=1
-          xvfb-run -a ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
+          xvfb-run -a timeout 60s ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
 
       - name: Static Analysis (Cppcheck)
         if: runner.os == 'Linux'
