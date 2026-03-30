@@ -13,10 +13,6 @@ sudo apt-get install libao-dev libmpg123-dev
 
 #wayland-scanner
 sudo apt install libwayland-bin libwayland-dev
-sudo apt install libxkbcommon-dev
-
-#wayland-scanner
-sudo apt install libwayland-bin libwayland-dev
 #install for cmake (if not installed already on this system)
 sudo apt install -y  libxi-dev libxrandr-dev libxinerama-dev \
                     libxcursor-dev libxcomposite-dev libxkbcommon-dev
