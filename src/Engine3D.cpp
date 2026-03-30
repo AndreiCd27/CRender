@@ -55,6 +55,7 @@ int Engine3D::setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const c
 	//Error checking if anything went wrong in the window creating process
 	if (window == NULL) {
 		std::cout << "Error when creating window \n";
+		if (window != nullptr) glfwDestroyWindow(window);
 		glfwTerminate();
 		return 0; //
 	}
@@ -241,15 +242,7 @@ void Engine3D::DrawAllInstances() {
 	}
 }
 
-void Engine3D::shadowPass() {
-	glBindFramebuffer(GL_FRAMEBUFFER, depthTextureObject.FBO_ID);
-	glViewport(0, 0, 2048, 2048);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
-	
-	
+void Engine3D::shadowPassStaticShader() {
 	shaderProgram.Activate();
 	VAO_1.Bind();
 
@@ -260,9 +253,12 @@ void Engine3D::shadowPass() {
 	// The Sun is looking from it's Position to the center (0,0,0);
 	glUniform3f(shaderProgram.GetUniformLocation("lightDirection"), SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z);
 
-	//glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
+	int indiciesSize = (int)(getScene()->GetEBO_Organizer().GetMultiArray().size());
+	glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
 
+}
 
+void Engine3D::shadowPassInstanceShader() {
 	instanceProgram.Activate();
 	VAO_1.Bind();
 
@@ -272,17 +268,66 @@ void Engine3D::shadowPass() {
 
 	glUniform3f(instanceProgram.GetUniformLocation("CamPosition"), 0, 0, 0);
 
-	SunCamera.LightMatrix(500.0f, instanceProgram, true);
+	SunCamera.LightMatrix(500.0f, instanceProgram, false);
 
 	glUniform3f(instanceProgram.GetUniformLocation("lightDirection"), SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z);
 
 	DrawAllInstances();
+}
+
+void Engine3D::renderPassStaticShader() {
+
+	shaderProgram.Activate();
+	VAO_1.Bind();
+
+	SunCamera.LightMatrix(500.0f, shaderProgram, true);
+
+	glUniform1i(shaderProgram.GetUniformLocation("shadowMap"), 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
+
+	int indiciesSize = (int)(getScene()->GetEBO_Organizer().GetMultiArray().size());
+	glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
+
+}
+
+void Engine3D::renderPassInstanceShader() {
+	// START TO DRAW INSTANCES
+
+	instanceProgram.Activate();
+	VAO_1.Bind();
+
+	SunCamera.LightMatrix(500.0f, instanceProgram, true);
+
+	glUniform1i(instanceProgram.GetUniformLocation("shadowMap"), 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
+
+	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
+
+	DrawAllInstances();
+}
+
+void Engine3D::shadowPass(bool STATIC_SHADER) {
+	glBindFramebuffer(GL_FRAMEBUFFER, depthTextureObject.FBO_ID);
+	glViewport(0, 0, 2048, 2048);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	
+	STATIC_SHADER ? shadowPassStaticShader() : shadowPassInstanceShader();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
+	
 }
 
-void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
+void Engine3D::renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float zFar) {
 
 	this->registerCameraInput(FOVdeg, zNear, zFar);
 
@@ -292,43 +337,9 @@ void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
 
 	glCullFace(GL_BACK);
 
-	
-
-	shaderProgram.Activate();
-	VAO_1.Bind();
-
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	SunCamera.LightMatrix(500.0f, shaderProgram, true);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
-
-	glUniform1i(shadowMapLocation, 0);
-
-	//glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
-	// 
-	// START TO DRAW INSTANCES
-
-	instanceProgram.Activate();
-	VAO_1.Bind();
-
-	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
-
-	SunCamera.LightMatrix(500.0f, instanceProgram, true);
-
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
-
-	glUniform1i(glGetUniformLocation(instanceProgram.ID, "shadowMap"), 0);
-
-	// TODO -- INSTANCE SHADER CONFIGURE, UNIFORMS IN OUR SAHDER
-	//		-- INSTANCE DATA FORWARDING & FORMATING
-	//		-- INSTANCE RENDERING
-	DrawAllInstances();
+	
+	STATIC_SHADER ? renderPassStaticShader() : renderPassInstanceShader();
 
 	//Swap BACK BUFFER with FRONT BUFFER
 	glfwSwapBuffers(window);
@@ -345,20 +356,24 @@ Tile* Engine3D::getVisibleCameraFrustum() {
 void Engine3D::EngineTerminate() {
 
 	//Delete our VAOs, VBOs, EBOs
-	VAO_1.Delete();
-	VBO_1.Delete();
-	EBO_1.Delete();
+	engine->VAO_1.Delete();
+	engine->VBO_1.Delete();
+	engine->EBO_1.Delete();
 
 	//Delete instanceVBO
-	glDeleteBuffers(1, &instanceVBO);
+	glDeleteBuffers(1, &engine->instanceVBO);
 
 	//Delete shader
-	shaderProgram.Delete();
+	engine->shaderProgram.Delete();
+	engine->instanceProgram.Delete();
 
 	//Destroy WINDOW OBJECT
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(engine->window);
 	//Terminate GLFW
 	glfwTerminate();
+
+	delete engine;
+
 }
 
 Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {

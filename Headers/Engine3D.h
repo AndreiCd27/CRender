@@ -40,8 +40,6 @@ private:
 
 	GLuint instanceVBO;
 
-	GLuint shadowMapLocation;
-
 	// Appearance
 	struct {
 		float R = 0.2f;
@@ -54,11 +52,18 @@ private:
 
 	Engine3D() = default;
 
+	~Engine3D() = default;
+
+	void shadowPassStaticShader();
+	void shadowPassInstanceShader();
+	void renderPassStaticShader();
+	void renderPassInstanceShader();
+
 public:
 
 	static Engine3D* GetEngine3D();
+	static void EngineTerminate();
 
-	~Engine3D() { EngineTerminate(); delete engine; };
 	// SETERS
 
 	int setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char* WINDOW_TITLE);
@@ -76,8 +81,6 @@ public:
 
 	void setupInstanceVBO();
 	void DrawInstances(Blueprint* BLUEPRINT, Tile* TILE);
-
-	//void setupShadowMap(const unsigned int SHADOW_WIDTH, const unsigned int SHADOW_HEIGHT);
 
 	inline void setBackground(float R, float G, float B, float A) { backgroundColor = { R,G,B,A }; };
 
@@ -100,17 +103,13 @@ public:
 
 	void initGameFrame();
 
-	void shadowPass();
+	void shadowPass(bool STATIC_SHADER);
 
-	void renderPass(float FOVdeg, float zNear, float zFar);
+	void renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float zFar);
 
 	void DrawAllInstances();
 
 	Tile* getVisibleCameraFrustum();
-
-	//void loadChunks(Tile* from);
-
-	void EngineTerminate();
 
 	Blueprint* LoadSTLGeomFile(const char* filePath, float scale);
 	
