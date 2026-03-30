@@ -39,6 +39,7 @@ private:
 	EBO EBO_1;
 
 	GLuint instanceVBO;
+	bool InstanceVBOSetupComplete = false;
 
 	// Appearance
 	struct {

@@ -6,6 +6,9 @@
 
 class VBO {
 public:
+
+	bool SetupComplete = false;
+
 	GLuint ID;
 	size_t Capacity = 0;
 	VBO() { std::cout << "C -> VBO \n"; };

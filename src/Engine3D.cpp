@@ -161,6 +161,8 @@ void Engine3D::setupInstanceVBO() {
 	glVertexAttribDivisor(9, 1);
 	VAO_1.Unbind();
 
+	InstanceVBOSetupComplete = true;
+
 }
 
 void Engine3D::DrawInstances(Blueprint* BLUEPRINT, Tile* TILE) {
@@ -356,19 +358,19 @@ Tile* Engine3D::getVisibleCameraFrustum() {
 void Engine3D::EngineTerminate() {
 
 	//Delete our VAOs, VBOs, EBOs
-	engine->VAO_1.Delete();
-	engine->VBO_1.Delete();
-	engine->EBO_1.Delete();
+	if (engine->VAO_1.SetupComplete) engine->VAO_1.Delete();
+	if (engine->VBO_1.SetupComplete) engine->VBO_1.Delete();
+	if (engine->EBO_1.SetupComplete) engine->EBO_1.Delete();
 
 	//Delete instanceVBO
-	glDeleteBuffers(1, &engine->instanceVBO);
+	if (engine->InstanceVBOSetupComplete) glDeleteBuffers(1, &engine->instanceVBO);
 
 	//Delete shader
-	engine->shaderProgram.Delete();
-	engine->instanceProgram.Delete();
+	if (engine->shaderProgram.SetupComplete) engine->shaderProgram.Delete();
+	if (engine->instanceProgram.SetupComplete) engine->instanceProgram.Delete();
 
 	//Destroy WINDOW OBJECT
-	glfwDestroyWindow(engine->window);
+	if (engine->window != nullptr) glfwDestroyWindow(engine->window);
 	//Terminate GLFW
 	glfwTerminate();
 

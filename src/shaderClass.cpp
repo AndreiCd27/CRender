@@ -71,6 +71,8 @@ void Shader::Setup(const char* vertexFile, const char* fragmentFile)
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
+	SetupComplete = true;
+
 }
 
 // Activates the Shader Program

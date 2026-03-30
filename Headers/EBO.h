@@ -4,6 +4,9 @@
 
 class EBO {
 public:
+
+	bool SetupComplete = false;
+
 	GLuint ID;
 	size_t Capacity = 0;
 	EBO() { std::cout << "C -> EBO \n"; };

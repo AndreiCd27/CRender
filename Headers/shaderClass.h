@@ -19,6 +19,9 @@ class Shader {
 private:
 	std::unordered_map<std::string, GLuint> UNIFORM_LOCATIONS;
 public:
+
+	bool SetupComplete = false;
+
 	GLuint ID;
 	Shader() = default;
 	void Setup(const char* vertFileName, const char* fragFileName);

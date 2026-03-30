@@ -6,6 +6,9 @@
 
 class VAO {
 public:
+
+	bool SetupComplete = false;
+
 	GLuint ID;
 	VAO() { std::cout << "C -> VAO \n"; };
 
