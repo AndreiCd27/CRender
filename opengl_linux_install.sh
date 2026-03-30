@@ -16,9 +16,9 @@ sudo apt install libwayland-bin libwayland-dev
 sudo apt install libxkbcommon-dev
 
 #install xinerama for cmake
-sudo apt install libxinerama-dev (if not installed already)
+sudo apt install libxinerama-dev #(if not installed already)
 #install xcursor for cmake
-sudo apt install libxcursor-dev (if not installed already)
+sudo apt install libxcursor-dev #(if not installed already)
 
 # GLFW
 cd /usr/local/lib/
