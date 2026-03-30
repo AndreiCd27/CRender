@@ -83,8 +83,11 @@ jobs:
           sudo apt-get install -y ninja-build valgrind cppcheck jq \
                                  libc++-18-dev libc++abi-18-dev
           #\libgl1-mesa-dev libglu1-mesa-dev xorg-dev xvfb libwayland-dev libxkbcommon-dev wayland-protocols libwayland-bin
+          
           # See Linux OpenGL & GLFW dependencies
           # https://medium.com/geekculture/a-beginners-guide-to-setup-opengl-in-linux-debian-2bfe02ccd1e
+
+          # For Debian based distributions
 
           # OpenGL
           sudo apt-get install cmake pkg-config
@@ -92,12 +95,16 @@ jobs:
           sudo apt-get install libglew-dev libglfw3-dev libglm-dev
           sudo apt-get install libao-dev libmpg123-dev
 
+          #wayland-scanner
+          sudo apt install libwayland-bin libwayland-dev
+          sudo apt install libxkbcommon-dev
+
           # GLFW
           cd /usr/local/lib/
-          git clone https://github.com/glfw/glfw.git
+          sudo git clone https://github.com/glfw/glfw.git
           cd glfw
-          cmake .
-          make
+          sudo cmake .
+          sudo make
           sudo make install
 
       - name: Build & Install
