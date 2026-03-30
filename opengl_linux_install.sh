@@ -15,6 +15,9 @@ sudo apt-get install libao-dev libmpg123-dev
 sudo apt install libwayland-bin libwayland-dev
 sudo apt install libxkbcommon-dev
 
+#install xinerama for cmake
+sudo apt install libxinerama-dev
+
 # GLFW
 cd /usr/local/lib/
 sudo git clone https://github.com/glfw/glfw.git
