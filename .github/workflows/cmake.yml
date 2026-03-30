@@ -100,6 +100,8 @@ jobs:
           #install for cmake (if not installed already on this system)
           sudo apt install -y  libxi-dev libxrandr-dev libxinerama-dev \
                                 libxcursor-dev libxcomposite-dev libxkbcommon-dev
+          #X Virtual Framebuffer for Github Actions enviroment
+          sudo apt install -y xvfb libgl1-mesa-dri
 
           # GLFW
           cd /usr/local/lib/
@@ -122,15 +124,19 @@ jobs:
 
       - name: Memory Check (Valgrind on GCC)
         # Only run Valgrind if we are on Linux and using G++ (no ASan conflict)
+        # Run through XVFB to be able to render on a screen (create window)
         if: runner.os == 'Linux' && startsWith(matrix.cxx, 'g++')
         run: |
-          valgrind --leak-check=full --error-exitcode=1 ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
+          export LIBGL_ALWAYS_SOFTWARE=1
+          xvfb-run -a valgrind --leak-check=full --error-exitcode=1 ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
 
       - name: Memory Check (ASan on Clang)
         # Only run the binary directly if using Clang (ASan is compiled in)
         if: runner.os == 'Linux' && startsWith(matrix.cxx, 'clang++')
+        # Run through XVFB to be able to render on a screen (create window)
         run: |
-          ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
+          export LIBGL_ALWAYS_SOFTWARE=1
+          xvfb-run -a ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
 
       - name: Static Analysis (Cppcheck)
         if: runner.os == 'Linux'
