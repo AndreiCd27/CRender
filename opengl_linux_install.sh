@@ -15,10 +15,11 @@ sudo apt-get install libao-dev libmpg123-dev
 sudo apt install libwayland-bin libwayland-dev
 sudo apt install libxkbcommon-dev
 
-#install xinerama for cmake
-sudo apt install libxinerama-dev #(if not installed already)
-#install xcursor for cmake
-sudo apt install libxcursor-dev #(if not installed already)
+#wayland-scanner
+sudo apt install libwayland-bin libwayland-dev
+#install for cmake (if not installed already on this system)
+sudo apt install -y  libxi-dev libxrandr-dev libxinerama-dev \
+                    libxcursor-dev libxcomposite-dev libxkbcommon-dev
 
 # GLFW
 cd /usr/local/lib/
