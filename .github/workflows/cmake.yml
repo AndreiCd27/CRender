@@ -128,7 +128,7 @@ jobs:
         if: runner.os == 'Linux' && startsWith(matrix.cxx, 'g++')
         run: |
           export LIBGL_ALWAYS_SOFTWARE=1
-          xvfb-run -a valgrind --leak-check=full --error-exitcode=1 ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
+          xvfb-run -a timeout 60s valgrind --leak-check=full --error-exitcode=1 ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
 
       - name: Memory Check (ASan on Clang)
         # Only run the binary directly if using Clang (ASan is compiled in)
