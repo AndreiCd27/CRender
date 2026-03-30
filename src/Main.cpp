@@ -1,4 +1,5 @@
 #include <iostream>
+#include <csignal>
 
 const int WINDOW_WIDTH = 1200;
 const int WINDOW_HEIGHT = 800;
@@ -6,7 +7,19 @@ const char* WINDOW_TITLE = "window";
 
 #include "Engine3D.h"
 
+// ENVIROMENT VARIABLE, binds to SIGTERM such that Engine3D is terminated
+//  without memory leaks and the cleanup process succeds
+bool force_exit = false;
+
+void exit_signal(int SIGNAL) {
+	if (SIGNAL == SIGTERM) {
+		force_exit = true;
+	}
+}
+
 int main() {
+
+	std::signal(SIGTERM, exit_signal);
 
 	Engine3D& engine = *Engine3D::GetEngine3D();
 	std::cout << "Engine initialized \n";
@@ -57,7 +70,7 @@ int main() {
 
 	std::cout << "Meshes constructed \n";
 
-	engine.setCamera(0.0f, 80.0f, 120.0f); //Set camera to this position
+	engine.setCamera(0.0f, 40.0f, 120.0f); //Set camera to this position
 	engine.setSunCamera(0.0f, 100.0f, 1.0f);
 
 	engine.setupShaders(); //Uses Camera Class and Mesh Instances
@@ -80,7 +93,7 @@ int main() {
 	const double FPSsampleTime = 1.0f / 20.0f;
 
 	// MAIN GAME LOOP
-	while (!engine.windowShouldClose()) {
+	while (!engine.windowShouldClose() && !force_exit) {
 
 		CURRENT_TIME = glfwGetTime();
 		timeDifference = CURRENT_TIME - PREV_TIME;
@@ -119,7 +132,11 @@ int main() {
 		engine.renderPass(false,45.0f, 0.1f, 1000.0f);
 	}
 
+	std::cout << "Cleaning up Engine3D... \n";
+
 	Engine3D::EngineTerminate();
+
+	std::cout << "Cleaning process terminated! \n";
 
 	return 0;
 }
