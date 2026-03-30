@@ -19,7 +19,7 @@ endif()
 
 add_subdirectory(Libraries/include/glm)
 
-add_subdirectory(Libraries/glfw)
+#add_subdirectory(Libraries/glfw)
 
 # Libraries
 add_library(glad)
@@ -28,6 +28,31 @@ target_include_directories(glad PUBLIC Libraries/include)
 
 find_package(OpenGL REQUIRED)
 #find_package(glfw3 REQUIRED)
+
+if (WIN32) 
+    if (MSVC)
+        set(GLFW_LIB ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib/glfw/win-msvc/glfw3.lib)
+        message("MSCV GLFW library used")
+    else ()
+        set(GLFW_LIB ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib/glfw/win-mingw/libglfw3.a)
+        message("MINGW_64 GLFW library used")
+    endif()
+    set(EXTRA_LIBS gdi32 user32 shell32)
+elseif (APPLE)
+    set(GLFW_LIB ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib/glfw/macos/libglfw3.a)
+    message("MACOS GLFW library used")
+
+    find_library(COCOA_FRAMEWORK Cocoa)
+    find_library(IOKIT_FRAMEWORK IOKit)
+    find_library(COREVIDEO_FRAMEWORK CoreVideo)
+    find_library(QUARTZ_FRAMEWORK QuartzCore)
+    set(EXTRA_LIBS ${COCOA_FRAMEWORK} ${IOKIT_FRAMEWORK} ${COREVIDEO_FRAMEWORK} ${QUARTZ_FRAMEWORK})
+elseif (UNIX AND NOT APPLE)
+    find_package(glfw3 REQUIRED)
+    set(GLFW_LIB glfw)
+    message("Linux GLFW library used")
+endif()
+
 
 # Main executable
 set(HEADER_FILES Headers/Engine3D.h Headers/Camera.h Headers/GeometryOrganizer.h Headers/GeometryLoader.h
@@ -38,15 +63,16 @@ add_executable(${PROJECT_NAME} src/Main.cpp src/Engine3D.cpp src/Camera.cpp src/
     src/GeometryLoader.cpp src/GeometryBasics.cpp src/Texture.cpp src/VBO.cpp src/EBO.cpp src/VAO.cpp src/shaderClass.cpp
     ${HEADER_FILES}
 )
+
 target_include_directories(${PROJECT_NAME} PRIVATE Headers)
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE Libraries/include)
-target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib)
+#target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_LIB} ${EXTRA_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     glad 
     OpenGL::GL 
     ${CMAKE_DL_LIBS}
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 # Resources + Shaders
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
