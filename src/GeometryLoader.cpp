@@ -14,7 +14,7 @@ const std::string& Entity::GetTag() const {
 	return TagName;
 }
 
-const int Entity::GetEID() const {
+int Entity::GetEID() const {
 	return EID;
 }
 

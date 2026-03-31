@@ -76,7 +76,7 @@ public:
 	virtual ~Entity() = default;
 
 	const std::string& GetTag() const;
-	const int GetEID() const;
+	int GetEID() const;
 
 	virtual void Update() = 0;
 };
