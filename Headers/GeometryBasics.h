@@ -3,6 +3,10 @@
 
 #include "precompile.h"
 
+// Members are public beacause we don't want to get access errors,
+// When OpenGL copies and transfers the data to VRAM
+// These public variables should be modified via methods
+
 class A_UV {
 public:
 	uint32_t UV = 0;
@@ -12,6 +16,8 @@ public:
 
 class AColor3 {
 public:
+	// Actually stores in ABGR format (for Little-Endian)
+	// Use Constructor functions
 	uint32_t RGBA = 0;
 	AColor3() = default;
 	AColor3(int R, int G, int B, int A);
@@ -36,11 +42,13 @@ public:
 	AVector3 Rotate(AVector3& ROT);
 	void Rotate_InPlace(AVector3& ROT);
 
-	operator glm::vec3() const;
+	operator glm::vec3() const; // Converts easily to glm::vec3
 
 	void DEBUG_Print() const;
 };
 
+// AVertex SHOULD be 32 BYTES!
+// With current features, there is no need for more complex vertex data structures
 class AVertex {
 public:
 	//--------------- 0 bytes
@@ -48,8 +56,10 @@ public:
 	AColor3 RGBA;
 	//--------------- 16 bytes
 	AVector3 NORMAL;
-	A_UV UV;
+	A_UV UV;                         // TODO: Textures
 	//--------------- 32 bytes
+
+
 	AVertex() = default;
 	AVertex(float x, float y, float z);
 	AVertex(float x, float y, float z, int R, int G, int B, int A);

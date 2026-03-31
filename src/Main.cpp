@@ -36,9 +36,9 @@ int main() {
 		std::cout << "Created: Human \n";
 		for (int i = 0; i < 4; i++) {
 			auto human = engine.getScene()->CreateInstance(humanMesh, AVector3(), 
-				"Human " + std::to_string(i)
+				"Human " + std::to_string(i) //TAG NAME
 			);
-			human->SetPosition(AVector3(0.0f + i * 40.0f, 2.0f, -5.0f));
+			human->SetPosition(AVector3(0.0f + i * 40.0f, 2.0f, -25.0f));
 			human->SetColor(i * 50, i * 50, 255 - i * 50, 255);
 			human->SetRotation(AVector3(-90.0f, 0.0f, 0.0f));
 		}
@@ -127,11 +127,22 @@ int main() {
 			PREV_TIME = CURRENT_TIME;
 			frameCounter = 0;
 
-			plane->SetPosition(AVector3((float)(cntt * 2 % 100), -5.0f, 0.0f));
-			first->SetPosition(AVector3((float)(cntt % 100), 5.0f, 0.0f));
+			float dt = (float)(cntt * 2 % 100);
+			plane->SetPosition(AVector3(dt, -5.0f, 0.0f));
+			plane->SetSize(AVector3(25.0f + dt/5.0f, 0.5f, 25.0f - dt/5.0f));
+			first->SetPosition(AVector3(dt/2.0f, 5.0f, 0.0f));
+
+			std::string tag = "Human 3";
+			auto workspace_sptr = scene->GetWorkspace().lock();
+			auto child = workspace_sptr->FirstChild(tag); // Finds first Child with Tag "Human 3"
+
+			if (child) child->SetRotation(AVector3(-90.0f + dt, 0.0f, 0.0f));
+			else std::cout << "Not found: the human 0! \n";
+
 			cntt++;
 		}
-		if (cntt > 100) {
+		if (cntt > 200) {
+			// Test out dynamic deletions
 			plane->Destroy();
 		}
 

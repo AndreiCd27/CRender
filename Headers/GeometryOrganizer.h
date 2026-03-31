@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GeometryLoader.h"
+#include "GeomInstance.h"
 
 class Scene;
 class Tile;

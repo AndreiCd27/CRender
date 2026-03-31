@@ -298,10 +298,6 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 
 	Blueprint::CalculateSurfaceNormals(vertices, indicies);
 
-	// Generate Handles for VBO and EBO
-	//GenerateHandle(generatedHandleID, VBO_ORGANIZER_TARGET, vertices.size());
-	//GenerateHandle(generatedHandleID, EBO_ORGANIZER_TARGET, indicies.size());
-
 	VBO_Organizer.NewHandle(generatedHandleID, (int)vertices.size());
 	EBO_Organizer.NewHandle(generatedHandleID, (int)indicies.size());
 
