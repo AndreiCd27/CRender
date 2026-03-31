@@ -125,10 +125,15 @@ jobs:
       - name: Memory Check (Valgrind on GCC)
         # Only run Valgrind if we are on Linux and using G++ (no ASan conflict)
         # Run through XVFB to be able to render on a screen (create window)
+
+        # Some memory leaks might happen due to the Virtual Framebuffer or the driver
+        # While testing, I found similar leaks to https://github.com/glfw/glfw/issues/1195
         if: runner.os == 'Linux' && startsWith(matrix.cxx, 'g++')
         run: |
           export LIBGL_ALWAYS_SOFTWARE=1
-          xvfb-run -a timeout 60s valgrind --leak-check=full --error-exitcode=1 ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
+          xvfb-run -a timeout --preserve-status 60s valgrind --leak-check=full \
+                                                         --suppressions=valgrind_external_libs.supp \
+                                                           --error-exitcode=1 ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
 
       - name: Memory Check (ASan on Clang)
         # Only run the binary directly if using Clang (ASan is compiled in)
@@ -136,7 +141,7 @@ jobs:
         # Run through XVFB to be able to render on a screen (create window)
         run: |
           export LIBGL_ALWAYS_SOFTWARE=1
-          xvfb-run -a timeout 60s ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
+          xvfb-run -a timeout --preserve-status 60s ./${BUILD_DIR}/${EXECUTABLE_NAME} < "${INPUT_FILENAME}"
 
       - name: Static Analysis (Cppcheck)
         if: runner.os == 'Linux'

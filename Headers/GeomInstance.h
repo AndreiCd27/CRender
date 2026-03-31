@@ -112,13 +112,13 @@ public:
 
 	std::vector<std::shared_ptr<Instance>> AllChildrenWith(std::string TagName);
 
-	std::vector<std::shared_ptr<Instance>> GetDescendants();
+	void GetDescendants(std::vector<std::shared_ptr<Instance>>& container);
 
 	// ------------- GET PARENT METHODS
 
 	std::shared_ptr<Instance> GetParent();
 
-	std::vector<std::shared_ptr<Instance>> GetAscendants();
+	void GetAscendants(std::vector<std::shared_ptr<Instance>>& container);
 
 	// ----------- INDEXING RELATIVE TO A HANDLE 
 	// (See MultiArray.h & InstanceArrayOrganizer in Scene class)

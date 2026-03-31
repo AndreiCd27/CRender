@@ -212,9 +212,12 @@ std::vector<std::shared_ptr<Instance>> Instance::AllChildrenWith(std::string _Ta
 	return Instance_PTRs;
 }
 
-std::vector<std::shared_ptr<Instance>> Instance::GetDescendants() {
-	std::vector<std::shared_ptr<Instance>> Descendants;
-	return Descendants;
+void Instance::GetDescendants(std::vector<std::shared_ptr<Instance>>& container) {
+	if (Children.empty()) return;
+	for (auto& c : Children) {
+		container.push_back(c);
+		c->GetDescendants(container);
+	}
 }
 
 // ------------- GET PARENT METHODS
@@ -228,9 +231,10 @@ std::shared_ptr<Instance> Instance::GetParent() {
 	return P_ptr;
 }
 
-std::vector<std::shared_ptr<Instance>> Instance::GetAscendants() {
-	std::vector<std::shared_ptr<Instance>> Ascendants;
-	return Ascendants;
+void Instance::GetAscendants(std::vector<std::shared_ptr<Instance>>& container) {
+	if (Parent.lock()==nullptr) return;
+	container.push_back(Parent.lock());
+	GetAscendants(container);
 }
 
 // -------------- INSTANCE DATA METHODS
