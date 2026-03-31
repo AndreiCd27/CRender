@@ -41,7 +41,7 @@ public:
 
 	Tile* WorldRoot = nullptr;
 
-	Instance* workspace = new Instance(nullptr, this);
+	std::shared_ptr<Instance> workspace = nullptr;
 
 	Scene();
 	~Scene();
@@ -49,7 +49,7 @@ public:
 	Tile* FindTileForPosition(AVertex center, AVector3 Position);
 
 	Blueprint* CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GLuint>& indicies);
-	Instance* CreateInstance(Blueprint* temp, AVector3 pos);
+	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, AVector3 pos);
 
 	ArrayOrganizer<InstanceData>& GetInstanceOrganizer();
 	ArrayOrganizer<AVertex>& GetVBO_Organizer();

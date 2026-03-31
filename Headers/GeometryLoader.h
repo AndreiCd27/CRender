@@ -78,7 +78,6 @@ public:
 	virtual void Update() = 0;
 };
 
-
 // ABSTRACT CLASS TRANSFORM
 class Transform : public Entity {
 	void Defaults();
@@ -93,7 +92,10 @@ public:
 	virtual ~Transform() = default;
 };
 
-class Instance : public Transform {
+class Instance : public Transform, public std::enable_shared_from_this<Instance> {
+
+	static int C_INS;
+	static int D_INS;
 
 	Blueprint* Template = nullptr; // Blueprint object
 	//Add more stuff, like materials and textures
@@ -105,9 +107,9 @@ class Instance : public Transform {
 	// A child must belong to ONLY ONE parent  [ Child >o---- Parent ]
 	// Additional methods are introduced to make transformations apply to Children,
 	// Relative to their Parent
-	std::vector< Instance* > Children;
+	std::vector< std::shared_ptr<Instance> > Children;
 	// Additionaly, a Parent shared pointer is introduced
-	Instance* Parent = nullptr;
+	std::weak_ptr<Instance> Parent;
 	// Local Position (Relative To Parent)
 	AVector3 LocalPos = AVector3(0.0f, 0.0f, 0.0f);
 	AVector3 LocalRot = AVector3(0.0f, 0.0f, 0.0f);
@@ -121,6 +123,7 @@ class Instance : public Transform {
 	void CalculateWorldVectors();
 
 public:
+
 	// --------- CONSTRUCTORS (requires a Blueprint first)
 
 	Instance(Blueprint* _Template, Scene* scene, std::string TagName);
@@ -128,7 +131,7 @@ public:
 
 	// --- DESTRUCTOR
 
-	~Instance();
+	~Instance() = default;
 
 	// --------- TRANSFORM METHODS
 
@@ -149,11 +152,11 @@ public:
 
 	// ---------- SET PARENT
 
-	void SetParent(Instance* _Parent);
+	void SetParent(std::weak_ptr<Instance> _Parent);
 
 	// ---------- ADD CHILD
 
-	void AddChild(Instance* Ins);
+	void AddChild(std::shared_ptr<Instance> Ins);
 
 	// ---------- GETTERS
 
@@ -168,6 +171,14 @@ public:
 
 	void SetHandleOffset(int offset);
 
+	// ------------ DEBUG
+
+	static void DEBUG_print_CDcount();
+
+	// ------------- FRIENDS (FROM SCENE CLASS)
+
+	friend Scene;
+	
 };
 
 class InstanceData {

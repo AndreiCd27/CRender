@@ -24,18 +24,20 @@ Transform::Transform(Scene* scene, std::string TagName) : Entity(scene, TagName)
 	Defaults();
 }
 
+int Instance::C_INS = 0;
+int Instance::D_INS = 0;
+
+void Instance::DEBUG_print_CDcount() {
+	std::cout << C_INS << " " << D_INS << "\n";
+}
+
 Instance::Instance(Blueprint* Template, Scene* scene) : Transform(scene, "Instance") {
+	C_INS++;
 	this->Template = Template;
 }
 Instance::Instance(Blueprint* Template, Scene* scene, std::string TagName) : Transform(scene, TagName) {
+	C_INS++;
 	this->Template = Template;
-}
-
-// Recursively delete instances
-Instance::~Instance() {
-	for (Instance* ins : Children) {
-		delete ins;
-	}
 }
 
 void Instance::Update_Cascade() {
@@ -51,20 +53,22 @@ AVector3 Instance::GetLocalPos() {
 	return LocalPos;
 }
 void Instance::SetLocalPos() {
-	if (Parent == nullptr) {
+	std::shared_ptr<Instance> P_ptr = Parent.lock();
+
+	if (P_ptr == nullptr) {
 		LocalPos = Position;
 		return;
 	}
 
-	AVector3 relVec3 = (this->Position - Parent->Position);
+	AVector3 relVec3 = (this->Position - P_ptr->Position);
 
-	AVector3 ParentRot = Parent->Rotation * (-1);
+	AVector3 ParentRot = P_ptr->Rotation * (-1);
 
 	relVec3.Rotate_InPlace(ParentRot);
 
-	relVec3.x /= Parent->Size.x;
-	relVec3.y /= Parent->Size.y;
-	relVec3.z /= Parent->Size.z;
+	relVec3.x /= P_ptr->Size.x;
+	relVec3.y /= P_ptr->Size.y;
+	relVec3.z /= P_ptr->Size.z;
 
 	LocalPos = relVec3;
 }
@@ -75,22 +79,22 @@ void Instance::CalculateWorldVectors() {
 	this->Rotation = this->LocalRot;
 	this->Size = this->LocalSize;
 	// Add Parent LocalVectors
-	Instance* P = this->Parent;
+	std::shared_ptr<Instance> P_ptr = Parent.lock();
 	// Iterate through all ascendents
-	while ( P != nullptr ) {
+	while ( P_ptr != nullptr ) {
 
 		// Scale first according to Parent Size (Local)
-		this->Position = this->Position * P->LocalSize;
+		this->Position = this->Position * P_ptr->LocalSize;
 		// Rotate according to Parent Rotation (Local) before adding the local vectors
-		this->Position.Rotate_InPlace(P->Rotation);
+		this->Position.Rotate_InPlace(P_ptr->Rotation);
 		// Add the local Rotation from the parent
-		this->Rotation += P->LocalRot;
+		this->Rotation += P_ptr->LocalRot;
 		// Add the local Position from the parent
-		this->Position += P->LocalPos;
+		this->Position += P_ptr->LocalPos;
 		// Multiply Size with local Size
-		this->Size = this->Size * P->LocalSize;
+		this->Size = this->Size * P_ptr->LocalSize;
 		// Advance upwards in the instance hierrarchy
-		P = P->Parent;
+		P_ptr = P_ptr->Parent.lock();
 	}
 }
 
@@ -139,11 +143,16 @@ void Instance::SetSize_Cascade(AVector3 _Size) {
 	return;
 }
 */
-void Instance::AddChild(Instance* Ins) {
+void Instance::AddChild(std::shared_ptr<Instance> Ins) {
+	// Check if child already is in Children vector
+	for (auto& c : Children) {
+		if (c == Ins) return;
+	}
 	Children.push_back(Ins);
 }
-void Instance::SetParent(Instance* _Parent) {
+void Instance::SetParent(std::weak_ptr<Instance> _Parent) {
 	Parent = _Parent;
+	Parent.lock()->AddChild(shared_from_this());
 	CalculateWorldVectors();
 }
 

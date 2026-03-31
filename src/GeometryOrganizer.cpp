@@ -103,11 +103,12 @@ void Instance::Update() {
 Scene::Scene() {
 	//std::cout << "C -> Scene \n";
 	WorldRoot = new Tile(nullptr, 0, 0, START_TILE_LEVEL);
+
+	workspace = std::make_shared<Instance>(nullptr, this);
 }
 
 Scene::~Scene() {
 	if (WorldRoot != nullptr) delete WorldRoot;
-	delete workspace;
 	for (int i = 0; i < (int)Blueprints.size(); i++) {
 		if (Blueprints[i] != nullptr) {
 			delete Blueprints[i];
@@ -143,8 +144,8 @@ Tile* Scene::FindTileForPosition(AVertex center, AVector3 Position) {
 	return tile;
 }
 
-Instance* Scene::CreateInstance(Blueprint* temp, AVector3 pos) {
-	Instance* newInst = new Instance(temp, this);
+std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, AVector3 pos) {
+	std::shared_ptr<Instance> newInst = std::make_shared<Instance>(temp, this);
 	newInst->SetPosition(pos);
 	AVertex& center = temp->Center;
 	newInst->SetColor(center.RGBA);
