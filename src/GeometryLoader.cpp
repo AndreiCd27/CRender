@@ -34,9 +34,8 @@ Instance::Instance(Blueprint* Template, Scene* scene, std::string TagName) : Tra
 // Recursively delete instances
 Instance::~Instance() {
 	for (Instance* ins : Children) {
-		ins->~Instance();
+		delete ins;
 	}
-	if (Parent != nullptr) delete Parent;
 }
 
 void Instance::Update_Cascade() {
