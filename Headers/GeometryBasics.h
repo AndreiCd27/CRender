@@ -37,6 +37,8 @@ public:
 	void Rotate_InPlace(AVector3& ROT);
 
 	operator glm::vec3() const;
+
+	void DEBUG_Print() const;
 };
 
 class AVertex {

@@ -81,6 +81,10 @@ AVector3::operator glm::vec3() const {
 	return glm::vec3(x, y, z);
 }
 
+void AVector3::DEBUG_Print() const {
+	std::cout << "(" << this->x << ", " << this->y << ", " << this->z << "), ";
+}
+
 
 AVertex::AVertex(float x, float y, float z) {
 	POS = AVector3(x, y, z);

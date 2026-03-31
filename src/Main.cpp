@@ -35,7 +35,9 @@ int main() {
 	if (humanMesh) {
 		std::cout << "Created: Human \n";
 		for (int i = 0; i < 4; i++) {
-			auto human = engine.getScene()->CreateInstance(humanMesh, AVector3());
+			auto human = engine.getScene()->CreateInstance(humanMesh, AVector3(), 
+				"Human " + std::to_string(i)
+			);
 			human->SetPosition(AVector3(0.0f + i * 40.0f, 2.0f, -5.0f));
 			human->SetColor(i * 50, i * 50, 255 - i * 50, 255);
 			human->SetRotation(AVector3(-90.0f, 0.0f, 0.0f));
@@ -47,13 +49,24 @@ int main() {
 	
 	Blueprint* cubeB = engine.CreateCube(10.0f);
 
+	std::shared_ptr<Instance> first = nullptr;
+	std::shared_ptr<Instance> prevI = nullptr;
 	for (int i = 0; i < 10; i++) {
-		auto I = engine.getScene()->CreateInstance(cubeB, AVector3());
+		auto I = engine.getScene()->CreateInstance(cubeB, AVector3(),
+			"Cube " + std::to_string(i)
+		);
+		if (prevI) {
+			I->SetParent(prevI);
+		}
+		else {
+			first = I;
+		}
 		I->SetColor(0, i*15, 255, 255);
 		I->SetPosition(AVector3(10.0f * i, 5.0f, 10.0f * i));
+		prevI = I;
 	}
 
-	auto plane = engine.getScene()->CreateInstance(cubeB, AVector3());
+	auto plane = engine.getScene()->CreateInstance(cubeB, AVector3(), "Plane");
 	plane->SetPosition(AVector3(0.0f, -5.0f, 0.0f));
 	plane->SetSize(AVector3(20.0f, 1.0f, 20.0f));
 	plane->SetColor(AColor3(50, 255, 25, 255));
@@ -61,11 +74,12 @@ int main() {
 	std::vector<AVertex> Verticies = { AVertex(-4.8f, 0.0f, -4.0f), AVertex(3.5f, 0.0f, -3.75f), AVertex(1.6f, 0.0f, 4.15f), AVertex(-2.65f, 0.0f, 2.75f) };
 	Blueprint* prismB = engine.CreatePrism(Verticies, 4, 10.0f);
 
-	auto triPrism = engine.getScene()->CreateInstance(prismB, AVector3());
-	triPrism->SetParent(plane);
+	auto triPrism = engine.getScene()->CreateInstance(prismB, AVector3(), "TriPrism");
 	triPrism->SetColor(255, 255, 0, 255);
 	triPrism->SetPosition(AVector3(-30.0f, -5.0f, -25.0f));
 	triPrism->SetSize(AVector3(5.0f, 5.0f, 5.0f));
+
+	triPrism->SetParent(plane);
 	
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -95,6 +109,10 @@ int main() {
 
 	int cntt = 0;
 
+	Scene* scene = engine.getScene();
+
+	scene->DEBUG_PrintInstanceHierarchy(scene->GetWorkspace(), 0, 10, false);
+
 	// MAIN GAME LOOP
 	while (!engine.windowShouldClose() && !force_exit) {
 
@@ -109,8 +127,12 @@ int main() {
 			PREV_TIME = CURRENT_TIME;
 			frameCounter = 0;
 
-			plane->SetPosition_Cascade(AVector3((float)(cntt * 2 % 100), -5.0f, 0.0f));
+			plane->SetPosition(AVector3((float)(cntt * 2 % 100), -5.0f, 0.0f));
+			first->SetPosition(AVector3((float)(cntt % 100), 5.0f, 0.0f));
 			cntt++;
+		}
+		if (cntt > 100) {
+			plane->Destroy();
 		}
 
 		engine.initGameFrame(); // setting up the background color
@@ -136,6 +158,12 @@ int main() {
 		engine.shadowPass(false);
 		engine.renderPass(false,45.0f, 0.1f, 1000.0f);
 	}
+
+	std::cout << " \n\n | -------- CLEANING PROCESS STARTED --------------- | \n\n";
+
+	std::cout << "Game Instance Hierarchy before cleanup! \n";
+
+	scene->DEBUG_PrintInstanceHierarchy(scene->GetWorkspace(), 0, 10, true);
 
 	std::cout << "Cleaning up Engine3D... \n";
 

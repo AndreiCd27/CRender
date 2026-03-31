@@ -87,15 +87,87 @@ void Tile::RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs) {
 	if (this->Divisions[1][1] != nullptr) this->Divisions[1][1]->RecurseInTilesOutputHandleIDs(HandleIDs);
 }
 
-void Instance::Update() {
+InstanceData* Instance::GetInstanceData() {
 	if (tile != nullptr && Template != nullptr) {
 		int HandleID = Template->GetID() | (tile->GetTileID() << Tile::shiftComponent);
 		if (ParentScene != nullptr) {
 			ArrayOrganizer<InstanceData>& insArrayOrg = ParentScene->GetInstanceOrganizer();
 			const Handle& h = insArrayOrg.GetHandleData(HandleID);
 			std::vector<InstanceData>& insArray = insArrayOrg.GetMultiArray();
-			insArray[h.offset + handleOffset].SetMatrix(Position, Rotation, Size);
-			insArray[h.offset + handleOffset].SetColor(Color);
+			return &insArray[h.offset + handleOffset];
+		}
+	}
+	return nullptr;
+}
+
+void Instance::Update() {
+	InstanceData* insData = GetInstanceData();
+	if (insData != nullptr) {
+		insData->SetMatrix(Position, Rotation, Size);
+		insData->SetColor(Color);
+	}
+}
+void Instance::Destroy() {
+
+	SetSize(AVector3(0.00001f, 0.00001f, 0.00001f));
+	SetPosition(AVector3(0.0f, -1000.0f, 0.0f));
+
+	if (!Children.empty()) {
+		for (auto& c : Children) {
+			c->Destroy();
+		}
+	}
+
+	// shared_from_this() works like a self reference but shared_ptr
+	// Delete from parent lsist
+	std::shared_ptr<Instance> P_ptr = Parent.lock();
+	if (P_ptr != nullptr) P_ptr->RemoveChild(shared_from_this());
+
+	Children.clear(); // Delete all shared pointers
+
+	// Now we have to remove the entry from the InstanceVBO
+	/*
+	if (tile != nullptr && Template != nullptr) {
+		int HandleID = Template->GetID() | (tile->GetTileID() << Tile::shiftComponent);
+		if (ParentScene != nullptr) {
+			ArrayOrganizer<InstanceData>& insArrayOrg = ParentScene->GetInstanceOrganizer();
+			const Handle& h = insArrayOrg.GetHandleData(HandleID);
+			
+			insArrayOrg.RemoveData(h.offset + handleOffset, HandleID);
+		}
+	}
+	*/
+}
+
+std::weak_ptr<const Instance> Scene::GetWorkspace() {
+	return std::weak_ptr<const Instance>(workspace);
+}
+
+void Scene::DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, int depth, int maxdepth, bool details) {
+	if (depth <= maxdepth) {
+		std::shared_ptr<const Instance> sptr = start.lock();
+		if (sptr == nullptr) return;
+
+		for (int i = 0; i < depth-1; i++) std::cout << "|  ";
+		if (depth > 0) std::cout << "|__";
+		details ? (std::cout << sptr->GetTag() << " [ EID=" << sptr->GetEID() << " Addr=" << &*sptr << " ] \n") :
+			(std::cout << sptr->GetTag() << " \n");
+		if (details) {
+			for (int i = 0; i < depth - 1; i++) std::cout << "|  ";
+			if (depth > 0) std::cout << "|++TRANSFORM_GLOBAL: ";
+			sptr->Position.DEBUG_Print();
+			sptr->Rotation.DEBUG_Print();
+			sptr->Size.DEBUG_Print();
+			std::cout << "\n";
+			for (int i = 0; i < depth - 1; i++) std::cout << "|  ";
+			if (depth > 0) std::cout << "|++TRANSFORM_LOCAL: ";
+			sptr->LocalPos.DEBUG_Print();
+			sptr->LocalRot.DEBUG_Print();
+			sptr->LocalSize.DEBUG_Print();
+			std::cout << "\n";
+		}
+		for (auto& c : sptr->Children) {
+			DEBUG_PrintInstanceHierarchy(std::weak_ptr(c), depth + 1, maxdepth, details);
 		}
 	}
 }
@@ -104,7 +176,7 @@ Scene::Scene() {
 	//std::cout << "C -> Scene \n";
 	WorldRoot = new Tile(nullptr, 0, 0, START_TILE_LEVEL);
 
-	workspace = std::make_shared<Instance>(nullptr, this);
+	workspace = std::make_shared<Instance>(nullptr, this, "WORKSPACE");
 }
 
 Scene::~Scene() {
@@ -144,8 +216,8 @@ Tile* Scene::FindTileForPosition(AVertex center, AVector3 Position) {
 	return tile;
 }
 
-std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, AVector3 pos) {
-	std::shared_ptr<Instance> newInst = std::make_shared<Instance>(temp, this);
+std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, AVector3 pos, const std::string& name) {
+	std::shared_ptr<Instance> newInst = std::make_shared<Instance>(temp, this, name);
 	newInst->SetPosition(pos);
 	AVertex& center = temp->Center;
 	newInst->SetColor(center.RGBA);

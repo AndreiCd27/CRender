@@ -75,6 +75,9 @@ public:
 	Entity(Scene* scene, std::string _TagName);
 	virtual ~Entity() = default;
 
+	const std::string& GetTag() const;
+	const int GetEID() const;
+
 	virtual void Update() = 0;
 };
 
@@ -90,6 +93,18 @@ public:
 	Transform(Scene* scene);
 	Transform(Scene* scene, std::string TagName);
 	virtual ~Transform() = default;
+};
+
+class InstanceData {
+private:
+	glm::mat4 matrix = glm::mat4(1.0f);
+	AColor3 RGBA; // 4 bytes
+	A_UV UV; // 4 bytes
+public:
+	InstanceData() = default;
+	InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale);
+	void SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale);
+	void SetColor(AColor3 _RGBA);
 };
 
 class Instance : public Transform, public std::enable_shared_from_this<Instance> {
@@ -129,9 +144,10 @@ public:
 	Instance(Blueprint* _Template, Scene* scene, std::string TagName);
 	Instance(Blueprint* _Template, Scene* scene);
 
-	// --- DESTRUCTOR
+	// --- DESTRUCTOR + DESTROY METHOD
 
 	~Instance() = default;
+	void Destroy();
 
 	// --------- TRANSFORM METHODS
 
@@ -142,25 +158,22 @@ public:
 	void SetColor(AColor3 _Color);
 	void SetTile(Tile* _tile);
 
-	// ---------- APPLY TRANSFORM TO CHILDREN METHODS
-
-	void SetPosition_Cascade(AVector3 _Position);
-	//void SetRotation_Cascade(AVector3 _Rotation);
-	//void SetSize_Cascade(AVector3 _Size);
-
 	AVector3 GetLocalPos();
 
 	// ---------- SET PARENT
 
 	void SetParent(std::weak_ptr<Instance> _Parent);
 
-	// ---------- ADD CHILD
+	// ---------- ADD + REMOVE CHILD
 
 	void AddChild(std::shared_ptr<Instance> Ins);
+	void RemoveChild(std::shared_ptr<Instance> Ins);
 
 	// ---------- GETTERS
 
 	int GetBlueprintID();
+
+	InstanceData* GetInstanceData();
 
 	AVector3 GetPosition();
 	AVector3 GetRotation();
@@ -179,18 +192,6 @@ public:
 
 	friend Scene;
 	
-};
-
-class InstanceData {
-private:
-	glm::mat4 matrix = glm::mat4(1.0f);
-	AColor3 RGBA; // 4 bytes
-	A_UV UV; // 4 bytes
-public:
-	InstanceData() = default;
-	InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale);
-	void SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale);
-	void SetColor(AColor3 _RGBA);
 };
 
 class UniqueGeom : public Transform {

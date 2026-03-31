@@ -49,7 +49,7 @@ public:
 	Tile* FindTileForPosition(AVertex center, AVector3 Position);
 
 	Blueprint* CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GLuint>& indicies);
-	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, AVector3 pos);
+	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, AVector3 pos, const std::string& name);
 
 	ArrayOrganizer<InstanceData>& GetInstanceOrganizer();
 	ArrayOrganizer<AVertex>& GetVBO_Organizer();
@@ -63,7 +63,11 @@ public:
 	
 	Handle GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET);
 
+	std::weak_ptr<const Instance> GetWorkspace();
+
 	void GenerateHandle(int HandleID, int TARGET, int capacity);
+
+	void DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, int depth, int maxdepth, bool details);
 };
 
 class Tile {

@@ -10,6 +10,14 @@ Entity::Entity(Scene* scene, std::string _TagName) : TagName(_TagName) {
 	contor++;
 }
 
+const std::string& Entity::GetTag() const {
+	return TagName;
+}
+
+const int Entity::GetEID() const {
+	return EID;
+}
+
 void Transform::Defaults() {
 	Rotation = AVector3(0.0f, 0.0f, 0.0f);
 	Size = AVector3(1.0f, 1.0f, 1.0f);
@@ -91,8 +99,8 @@ void Instance::CalculateWorldVectors() {
 		this->Rotation += P_ptr->LocalRot;
 		// Add the local Position from the parent
 		this->Position += P_ptr->LocalPos;
-		// Multiply Size with local Size
-		this->Size = this->Size * P_ptr->LocalSize;
+		// Multiply Size with local Size (DEACTIVATED)
+		//this->Size = this->Size * P_ptr->LocalSize;
 		// Advance upwards in the instance hierrarchy
 		P_ptr = P_ptr->Parent.lock();
 	}
@@ -101,18 +109,20 @@ void Instance::CalculateWorldVectors() {
 void Instance::SetPosition(AVector3 _Position) {
 	Position = _Position;
 	SetLocalPos();
-	// Recalculate local vectors from this Instance UPWARDS
-	CalculateWorldVectors();
 	// Update recursively
 	Update_Cascade();
 }
 void Instance::SetRotation(AVector3 _Rotation) {
-	Rotation = _Rotation;
-	Update();
+	LocalRot = _Rotation;
+	SetLocalPos();
+	// Update recursively
+	Update_Cascade();
 }
 void Instance::SetSize(AVector3 _Size) {
-	Size = _Size;
-	Update();
+	LocalSize = _Size;
+	SetLocalPos();
+	// Update recursively
+	Update_Cascade();
 }
 void Instance::SetColor(AColor3 _Color) {
 	Color = _Color;
@@ -126,34 +136,31 @@ void Instance::SetTile(Tile* _tile) {
 	tile = _tile;
 }
 
-void Instance::SetPosition_Cascade(AVector3 _Position) {
-	this->Position = _Position;
-	this->SetLocalPos();
-	this->Update();
-	if (Children.empty()) return;
-	for (auto& ins_uptr : Children) {
-		ins_uptr->SetPosition_Cascade(_Position);
-	}
-}
-/*
-void Instance::SetRotation_Cascade(AVector3 _Rotation) {
-	return;
-}
-void Instance::SetSize_Cascade(AVector3 _Size) {
-	return;
-}
-*/
 void Instance::AddChild(std::shared_ptr<Instance> Ins) {
 	// Check if child already is in Children vector
-	for (auto& c : Children) {
-		if (c == Ins) return;
+	auto iterator = std::find(Children.begin(), Children.end(), Ins);
+	if (iterator == Children.end()) {
+		Children.push_back(Ins);
 	}
-	Children.push_back(Ins);
+}
+void Instance::RemoveChild(std::shared_ptr<Instance> Ins) {
+	// Check if child already is in Children vector
+	auto iterator = std::find(Children.begin(), Children.end(), Ins);
+	if (iterator != Children.end()) {
+		Children.erase(iterator);
+	}
 }
 void Instance::SetParent(std::weak_ptr<Instance> _Parent) {
+	// Check if this instance already has a parent
+	if (Parent.lock() != nullptr) Parent.lock()->RemoveChild(shared_from_this());
+
 	Parent = _Parent;
+
 	Parent.lock()->AddChild(shared_from_this());
-	CalculateWorldVectors();
+
+	SetLocalPos();
+
+	Update_Cascade();
 }
 
 int Instance::GetBlueprintID() { return Template->GetID(); }
