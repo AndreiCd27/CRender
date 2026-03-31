@@ -25,11 +25,16 @@ public:
 	AVector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {};
 	~AVector3() = default;
 	AVector3 operator+(const AVector3& dr);
+	AVector3 operator-(const AVector3& dr);
 	AVector3 operator*(const AVector3& dr);
 	AVector3 operator*(const float& scalar);
 	AVector3& operator+=(const AVector3& dr);
+	AVector3& operator-=(const AVector3& dr);
 	AVector3 operator^(const AVector3& dr); // Used for cross product
 	AVector3 Normalize();
+	void Normalize_InPlace();
+	AVector3 Rotate(AVector3& ROT);
+	void Rotate_InPlace(AVector3& ROT);
 
 	operator glm::vec3() const;
 };

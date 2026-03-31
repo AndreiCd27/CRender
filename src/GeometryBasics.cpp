@@ -21,6 +21,13 @@ AVector3& AVector3::operator+=(const AVector3& dr) {
 	this->x += dr.x; this->y += dr.y; this->z += dr.z;
 	return *this;
 }
+AVector3 AVector3::operator-(const AVector3& dr) {
+	return { this->x - dr.x, this->y - dr.y, this->z - dr.z };
+}
+AVector3& AVector3::operator-=(const AVector3& dr) {
+	this->x -= dr.x; this->y -= dr.y; this->z -= dr.z;
+	return *this;
+}
 AVector3 AVector3::operator*(const AVector3& dr) {
 	return { dr.x * this->x, dr.y * this->y, dr.z * this->z };
 }
@@ -37,6 +44,37 @@ AVector3 AVector3::operator^(const AVector3& dr) { //CROSS PRODUCT
 AVector3 AVector3::Normalize() {
 	float dist = std::sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
 	return { this->x / dist, this->y / dist, this->z / dist };
+}
+void AVector3::Normalize_InPlace() {
+	float dist = std::sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
+	this->x /= dist; this->y /= dist; this->z /= dist;
+}
+AVector3 AVector3::Rotate(AVector3& ROT) {
+	glm::vec3 t = (glm::vec3)(*this);
+
+	glm::quat quat = glm::quat(glm::radians((glm::vec3)ROT));
+
+	t = quat * t;
+
+	return AVector3(t.x, t.y, t.z);
+}
+void AVector3::Rotate_InPlace(AVector3& ROT) {
+	glm::vec3 t = (glm::vec3)(*this);
+	/*
+	glm::mat4 rotMat = glm::mat4(1.0f);
+	rotMat = glm::rotate(rotMat, glm::radians(ROT.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	rotMat = glm::rotate(rotMat, glm::radians(ROT.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	rotMat = glm::rotate(rotMat, glm::radians(ROT.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	*/
+	//t = glm::vec3(rotMat * glm::vec4(t, 1.0f));
+	// Quaternion for Rotation (easier computation)
+	glm::quat quat = glm::quat(glm::radians((glm::vec3)ROT));
+
+	t = quat * t;
+
+	this->x = t.x;
+	this->y = t.y;
+	this->z = t.z;
 }
 
 AVector3::operator glm::vec3() const {

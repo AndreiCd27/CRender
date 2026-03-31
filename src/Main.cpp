@@ -65,6 +65,8 @@ int main() {
 	triPrism->SetColor(255, 255, 0, 255);
 	triPrism->SetPosition(AVector3(-30.0f, -5.0f, -25.0f));
 	triPrism->SetSize(AVector3(5.0f, 5.0f, 5.0f));
+
+	plane->AddChild(triPrism);
 	
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -92,6 +94,8 @@ int main() {
 	int frameCounter = 0;
 	const double FPSsampleTime = 1.0f / 20.0f;
 
+	int cntt = 0;
+
 	// MAIN GAME LOOP
 	while (!engine.windowShouldClose() && !force_exit) {
 
@@ -105,8 +109,10 @@ int main() {
 			glfwSetWindowTitle(engine.getWindow(), winTitle.c_str());
 			PREV_TIME = CURRENT_TIME;
 			frameCounter = 0;
-		}
 
+			plane->SetPosition_Cascade(AVector3((float)(cntt * 2 % 100), -5.0f, 0.0f));
+			cntt++;
+		}
 
 		engine.initGameFrame(); // setting up the background color
 

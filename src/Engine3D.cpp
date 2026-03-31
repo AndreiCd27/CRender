@@ -370,9 +370,11 @@ void Engine3D::EngineTerminate() {
 	if (engine->instanceProgram.SetupComplete) engine->instanceProgram.Delete();
 
 	//Destroy WINDOW OBJECT
-	if (engine->window != nullptr) glfwDestroyWindow(engine->window);
-	//Terminate GLFW
-	glfwTerminate();
+	if (engine->window != nullptr) {
+		glfwDestroyWindow(engine->window);
+		//Terminate GLFW
+		glfwTerminate();
+	}
 
 	delete engine;
 

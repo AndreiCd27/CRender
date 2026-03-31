@@ -31,9 +31,77 @@ Instance::Instance(Blueprint* Template, Scene* scene, std::string TagName) : Tra
 	this->Template = Template;
 }
 
+// Recursively delete instances
+Instance::~Instance() {
+	for (Instance* ins : Children) {
+		ins->~Instance();
+	}
+	if (Parent != nullptr) delete Parent;
+}
+
+void Instance::Update_Cascade() {
+	this->CalculateWorldVectors();
+	this->Update();
+	if (Children.empty()) return;
+	for (auto& ins_uptr : Children) {
+		ins_uptr->Update_Cascade();
+	}
+}
+
+AVector3 Instance::GetLocalPos() {
+	return LocalPos;
+}
+void Instance::SetLocalPos() {
+	if (Parent == nullptr) {
+		LocalPos = Position;
+		return;
+	}
+
+	AVector3 relVec3 = (this->Position - Parent->Position);
+
+	AVector3 ParentRot = Parent->Rotation * (-1);
+
+	relVec3.Rotate_InPlace(ParentRot);
+
+	relVec3.x /= Parent->Size.x;
+	relVec3.y /= Parent->Size.y;
+	relVec3.z /= Parent->Size.z;
+
+	LocalPos = relVec3;
+}
+
+void Instance::CalculateWorldVectors() {
+	// Reset Position & Rotation & Scale
+	this->Position = this->LocalPos;
+	this->Rotation = this->LocalRot;
+	this->Size = this->LocalSize;
+	// Add Parent LocalVectors
+	Instance* P = this->Parent;
+	// Iterate through all ascendents
+	while ( P != nullptr ) {
+
+		// Scale first according to Parent Size (Local)
+		this->Position = this->Position * P->LocalSize;
+		// Rotate according to Parent Rotation (Local) before adding the local vectors
+		this->Position.Rotate_InPlace(P->Rotation);
+		// Add the local Rotation from the parent
+		this->Rotation += P->LocalRot;
+		// Add the local Position from the parent
+		this->Position += P->LocalPos;
+		// Multiply Size with local Size
+		this->Size = this->Size * P->LocalSize;
+		// Advance upwards in the instance hierrarchy
+		P = P->Parent;
+	}
+}
+
 void Instance::SetPosition(AVector3 _Position) {
 	Position = _Position;
-	Update();
+	SetLocalPos();
+	// Recalculate local vectors from this Instance UPWARDS
+	CalculateWorldVectors();
+	// Update recursively
+	Update_Cascade();
 }
 void Instance::SetRotation(AVector3 _Rotation) {
 	Rotation = _Rotation;
@@ -53,6 +121,31 @@ void Instance::SetColor(int R, int G, int B, int A) {
 }
 void Instance::SetTile(Tile* _tile) {
 	tile = _tile;
+}
+
+void Instance::SetPosition_Cascade(AVector3 _Position) {
+	this->Position = _Position;
+	this->SetLocalPos();
+	this->Update();
+	if (Children.empty()) return;
+	for (auto& ins_uptr : Children) {
+		ins_uptr->SetPosition_Cascade(_Position);
+	}
+}
+/*
+void Instance::SetRotation_Cascade(AVector3 _Rotation) {
+	return;
+}
+void Instance::SetSize_Cascade(AVector3 _Size) {
+	return;
+}
+*/
+void Instance::AddChild(Instance* Ins) {
+	Children.push_back(Ins);
+}
+void Instance::SetParent(Instance* _Parent) {
+	Parent = _Parent;
+	CalculateWorldVectors();
 }
 
 int Instance::GetBlueprintID() { return Template->GetID(); }

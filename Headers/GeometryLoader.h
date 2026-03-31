@@ -101,11 +101,36 @@ class Instance : public Transform {
 	int handleOffset = 0; 
 	// The offset calculated from the coresponding HandleID
 
+	// This Children vector implements an instance hierarchy
+	// A child must belong to ONLY ONE parent  [ Child >o---- Parent ]
+	// Additional methods are introduced to make transformations apply to Children,
+	// Relative to their Parent
+	std::vector< Instance* > Children;
+	// Additionaly, a Parent shared pointer is introduced
+	Instance* Parent = nullptr;
+	// Local Position (Relative To Parent)
+	AVector3 LocalPos = AVector3(0.0f, 0.0f, 0.0f);
+	AVector3 LocalRot = AVector3(0.0f, 0.0f, 0.0f);
+	AVector3 LocalSize = AVector3(1.0f, 1.0f, 1.0f);
+
 	void Update() override;
+	void Update_Cascade();
+
+	void SetLocalPos();
+
+	void CalculateWorldVectors();
 
 public:
+	// --------- CONSTRUCTORS (requires a Blueprint first)
+
 	Instance(Blueprint* _Template, Scene* scene, std::string TagName);
 	Instance(Blueprint* _Template, Scene* scene);
+
+	// --- DESTRUCTOR
+
+	~Instance();
+
+	// --------- TRANSFORM METHODS
 
 	void SetPosition(AVector3 _Position);
 	void SetRotation(AVector3 _Rotation);
@@ -114,11 +139,32 @@ public:
 	void SetColor(AColor3 _Color);
 	void SetTile(Tile* _tile);
 
+	// ---------- APPLY TRANSFORM TO CHILDREN METHODS
+
+	void SetPosition_Cascade(AVector3 _Position);
+	//void SetRotation_Cascade(AVector3 _Rotation);
+	//void SetSize_Cascade(AVector3 _Size);
+
+	AVector3 GetLocalPos();
+
+	// ---------- SET PARENT
+
+	void SetParent(Instance* _Parent);
+
+	// ---------- ADD CHILD
+
+	void AddChild(Instance* Ins);
+
+	// ---------- GETTERS
+
 	int GetBlueprintID();
 
 	AVector3 GetPosition();
 	AVector3 GetRotation();
 	AVector3 GetSize();
+
+	// ----------- INDEXING RELATIVE TO A HANDLE 
+	// (See MultiArray.h & InstanceArrayOrganizer in Scene class)
 
 	void SetHandleOffset(int offset);
 

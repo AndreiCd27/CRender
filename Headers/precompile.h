@@ -14,6 +14,7 @@
 #include <exception>
 #include <sstream>
 #include <utility>
+#include <memory>
 #include <unordered_map>
 
 #include <glad/glad.h>

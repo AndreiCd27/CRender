@@ -29,7 +29,6 @@ private:
 
 	// Clasify Blueprints
 	std::vector<Blueprint*> Blueprints;
-	std::vector<Instance*> Instances;
 
 	std::unordered_map<std::string, int> Alias_TO_ID;
 	std::unordered_map<int, Blueprint*> ID_TO_Blueprint;
@@ -41,6 +40,8 @@ private:
 public:
 
 	Tile* WorldRoot = nullptr;
+
+	Instance* workspace = new Instance(nullptr, this);
 
 	Scene();
 	~Scene();
@@ -55,7 +56,6 @@ public:
 	ArrayOrganizer<GLuint>& GetEBO_Organizer();
 
 	std::vector<Blueprint*>& GetBlueprints();
-	std::vector<Instance*>& GetInstances();
 
 	const InstanceData* GetInstanceOrganizerPTR(int HandleID);
 	const AVertex * GetVBO_OrganizerPTR(int HandleID);

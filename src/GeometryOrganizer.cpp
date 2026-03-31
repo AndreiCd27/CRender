@@ -107,11 +107,7 @@ Scene::Scene() {
 
 Scene::~Scene() {
 	if (WorldRoot != nullptr) delete WorldRoot;
-	for (int i = 0; i < (int)Instances.size(); i++) {
-		if (Instances[i] != nullptr) {
-			delete Instances[i];
-		}
-	}
+	delete workspace;
 	for (int i = 0; i < (int)Blueprints.size(); i++) {
 		if (Blueprints[i] != nullptr) {
 			delete Blueprints[i];
@@ -172,7 +168,7 @@ Instance* Scene::CreateInstance(Blueprint* temp, AVector3 pos) {
 
 	newInst->SetHandleOffset( insArrayOrg.GetHandleData(HandleID).size - 1 );
 
-	Instances.push_back(newInst);
+	newInst->SetParent(workspace);
 
 	return newInst;
 }
@@ -262,8 +258,4 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 
 std::vector<Blueprint*>& Scene::GetBlueprints() {
 	return Blueprints;
-}
-
-std::vector<Instance*>& Scene::GetInstances() {
-	return Instances;
 }
