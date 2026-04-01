@@ -53,11 +53,10 @@ int Engine3D::setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const c
 	//Create the WINDOW OBJECT with our defined width and height and title
 	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
 	//Error checking if anything went wrong in the window creating process
-	if (window == NULL) {
+	if (window == nullptr) {
 		std::cout << "Error when creating window \n";
-		if (window != nullptr) glfwDestroyWindow(window);
-		glfwTerminate();
-		return 0; //
+		EngineTerminate();
+		return -1; //
 	}
 	//Tell GLFW we are using our created window as it's context
 	glfwMakeContextCurrent(window);
@@ -164,8 +163,8 @@ void Engine3D::setupInstanceVBO() {
 	InstanceVBOSetupComplete = true;
 
 }
-
-void Engine3D::DrawInstances(Blueprint* BLUEPRINT, Tile* TILE) {
+/* TO FIX
+void Engine3D::DrawInstances(Blueprint* BLUEPRINT, const Tile* TILE) {
 
 	if (TILE == nullptr) return;
 
@@ -184,6 +183,7 @@ void Engine3D::DrawInstances(Blueprint* BLUEPRINT, Tile* TILE) {
 		std::cout << e.what() << "\n";
 	}
 }
+*/
 
 Camera& Engine3D::getCamera(bool Sun) { if (Sun) { return SunCamera; } return UserCamera; }
 Scene* Engine3D::getScene() { return &MainScene; }
@@ -248,12 +248,14 @@ void Engine3D::shadowPassStaticShader() {
 	shaderProgram.Activate();
 	VAO_1.Bind();
 
-	glUniform3f(shaderProgram.GetUniformLocation("CamPosition"), 0, 0, 0);
+	shaderProgram.SetUniformVector3("CamPosition", AVector3(0.0f, 0.0f, 0.0f));
 
 	SunCamera.LightMatrix(500.0f, shaderProgram, false);
 
 	// The Sun is looking from it's Position to the center (0,0,0);
-	glUniform3f(shaderProgram.GetUniformLocation("lightDirection"), SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z);
+	shaderProgram.SetUniformVector3("lightDirection", 
+		AVector3(SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z)
+	);
 
 	int indiciesSize = (int)(getScene()->GetEBO_Organizer().GetMultiArray().size());
 	glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
@@ -268,11 +270,14 @@ void Engine3D::shadowPassInstanceShader() {
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
 
-	glUniform3f(instanceProgram.GetUniformLocation("CamPosition"), 0, 0, 0);
+	instanceProgram.SetUniformVector3("CamPosition", AVector3(0.0f, 0.0f, 0.0f));
 
 	SunCamera.LightMatrix(500.0f, instanceProgram, false);
 
-	glUniform3f(instanceProgram.GetUniformLocation("lightDirection"), SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z);
+	// The Sun is looking from it's Position to the center (0,0,0);
+	instanceProgram.SetUniformVector3("lightDirection",
+		AVector3(SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z)
+	);
 
 	DrawAllInstances();
 }
@@ -381,10 +386,11 @@ void Engine3D::EngineTerminate() {
 }
 
 Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {
-	std::vector<float> coords, normals;
-	std::vector<unsigned int> tris, solids;
 
 	try {
+		std::vector<float> coords, normals;
+		std::vector<unsigned int> tris, solids;
+
 		stl_reader::ReadStlFile(fileName, coords, normals, tris, solids);
 
 		std::vector<AVertex> vert;
@@ -406,10 +412,10 @@ Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {
 			if (uniqueVert.find(STLfileIndex) == uniqueVert.end()) {
 				// Found a unique vertex that is not a duplicate
 				// Add to our map
-				uniqueVert[STLfileIndex] = (GLuint)vert.size();
+				uniqueVert.try_emplace(STLfileIndex, (GLuint)vert.size());
 
 				int coordINDEX = 3 * STLfileIndex;
-				float* c = &coords[coordINDEX];
+				const float* c = &coords[coordINDEX];
 
 				vert.push_back(AVertex(c[0] * scale, c[1] * scale, c[2] * scale, 200, 200, 200, 255));
 			}

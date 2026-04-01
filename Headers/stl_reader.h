@@ -238,12 +238,12 @@ namespace stl_reader {
 
         /// initializes the mesh from the stl-file specified through filename
         /** \{ */
-        StlMesh(const char* filename)
+        explicit StlMesh(const char* filename)
         {
             read_file(filename);
         }
 
-        StlMesh(const std::string& filename)
+        explicit StlMesh(const std::string& filename)
         {
             read_file(filename);
         }
@@ -597,7 +597,7 @@ namespace stl_reader {
 
                 if (tokenCount > 0)
                 {
-                    string& tok = tokens[0];
+                    const string& tok = tokens[0];
                     if (tok.compare("vertex") == 0) {
                         if (tokenCount < 4) {
                             STL_READER_THROW("ERROR while reading from " << filename <<

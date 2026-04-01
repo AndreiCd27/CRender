@@ -2,10 +2,9 @@
 #include "Camera.h"
 #include "GeometryLoader.h"
 
-Camera::Camera(AVector3 pos, float _Yaw, float _Pitch)
+Camera::Camera(AVector3 pos, float _Yaw, float _Pitch) : Position(pos)
 {
 	//std::cout << "C -> Camera \n";
-	Position = pos;
 	Yaw = _Yaw;
 	Pitch = _Pitch;
 }
@@ -24,8 +23,8 @@ void Camera::Matrix(float FOVdeg, float near, float far, float aspect, Shader& s
 
 	glm::mat4 perspMatrix = mat4Tuple.proj * mat4Tuple.view;
 
-	glUniform3f(shader.GetUniformLocation("CamPosition"), Position.x, Position.y, Position.z);
-	glUniformMatrix4fv(shader.GetUniformLocation("perspectiveMatrix"), 1, GL_FALSE, glm::value_ptr(perspMatrix));
+	shader.SetUniformVector3("CamPosition", AVector3(Position.x, Position.y, Position.z));
+	shader.SetUniformMatrix4by4("perspectiveMatrix", perspMatrix);
 }
 
 void Camera::LightMatrix(float shadowMapScale, Shader& shader, bool TextureBias) {
@@ -48,16 +47,10 @@ void Camera::LightMatrix(float shadowMapScale, Shader& shader, bool TextureBias)
 			0.5, 0.5, 0.5, 1.0
 		);
 		depthMatrix = biasMatrix * depthMatrix;
-		glUniformMatrix4fv(shader.GetUniformLocation("lightPerspMatrix"), 
-			1, GL_FALSE, glm::value_ptr(depthMatrix)
-		);
+		shader.SetUniformMatrix4by4("lightPerspMatrix",depthMatrix);
 	} else {
-		glUniformMatrix4fv(shader.GetUniformLocation("lightPerspMatrix"), 
-			1, GL_FALSE, glm::value_ptr(depthMatrix)
-		);
-		glUniformMatrix4fv(shader.GetUniformLocation("perspectiveMatrix"), 
-			1, GL_FALSE, glm::value_ptr(depthMatrix)
-		);
+		shader.SetUniformMatrix4by4("lightPerspMatrix", depthMatrix);
+		shader.SetUniformMatrix4by4("perspectiveMatrix", depthMatrix);
 		
 	}
 };

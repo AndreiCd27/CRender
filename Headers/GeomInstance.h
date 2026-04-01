@@ -65,7 +65,7 @@ public:
 
 	// --------- CONSTRUCTORS (requires a Blueprint first)
 
-	Instance(Blueprint* _Template, Scene* scene, std::string TagName);
+	Instance(Blueprint* _Template, Scene* scene, const std::string& TagName);
 	Instance(Blueprint* _Template, Scene* scene);
 
 	// --- DESTRUCTOR + DESTROY METHOD
@@ -105,12 +105,12 @@ public:
 
 	// ----------- GET CHILD METHODS
 
-	std::shared_ptr<Instance> FirstChild(std::string TagName) const;
+	std::shared_ptr<Instance> FirstChild(const std::string& TagName) const;
 	std::shared_ptr<Instance> FirstChild(int EntityID) const;
 
 	const std::vector<std::shared_ptr<Instance>>& GetChildren();
 
-	std::vector<std::shared_ptr<Instance>> AllChildrenWith(std::string TagName);
+	std::vector<std::shared_ptr<Instance>> AllChildrenWith(const std::string& TagName);
 
 	void GetDescendants(std::vector<std::shared_ptr<Instance>>& container);
 

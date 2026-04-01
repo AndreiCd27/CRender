@@ -16,7 +16,7 @@ Instance::Instance(Blueprint* Template, Scene* scene) : Transform(scene, "Instan
 	EID_UMap[GetEID()] = shared_from_this();
 	Instance_UMap[GetTag()].push_back(GetEID());
 }
-Instance::Instance(Blueprint* Template, Scene* scene, std::string TagName) : Transform(scene, TagName) {
+Instance::Instance(Blueprint* Template, Scene* scene, const std::string& TagName) : Transform(scene, TagName) {
 	C_INS++;
 	this->Template = Template;
 }
@@ -117,7 +117,7 @@ void Instance::SetRotation(AVector3 _Rotation) {
 void Instance::SetSize(AVector3 _Size) {
 	auto parent = Parent.lock();
 	if (parent == nullptr) return;
-	AVector3& P_size = parent->Size; // (World-Space)
+	const AVector3& P_size = parent->Size; // (World-Space)
 	LocalSize = AVector3(_Size.x / P_size.x, _Size.y / P_size.y, _Size.z / P_size.z);
 	SetLocalPos();
 	// Update recursively
@@ -182,7 +182,7 @@ void Instance::SetHandleOffset(int offset) { handleOffset = offset; }
 
 // ----------- GET CHILD METHODS
 
-std::shared_ptr<Instance> Instance::FirstChild(std::string _TagName) const {
+std::shared_ptr<Instance> Instance::FirstChild(const std::string& _TagName) const {
 	auto iterator = Instance_UMap.find(_TagName);
 	if (iterator == Instance_UMap.end()) return nullptr;
 	// TagName was found in UMap, extract first EntityID
@@ -204,7 +204,7 @@ std::shared_ptr<Instance> Instance::FirstChild(int EntityID) const {
 
 const std::vector<std::shared_ptr<Instance>>& Instance::GetChildren() { return Children; }
 
-std::vector<std::shared_ptr<Instance>> Instance::AllChildrenWith(std::string _TagName) {
+std::vector<std::shared_ptr<Instance>> Instance::AllChildrenWith(const std::string& _TagName) {
 	std::vector<std::shared_ptr<Instance>> Instance_PTRs;
 	for (auto& c : Children) {
 		if (c->GetTag() == _TagName) Instance_PTRs.push_back(c);

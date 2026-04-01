@@ -102,8 +102,6 @@ int main() {
 
 	//FOR FPS COUNTER
 	double PREV_TIME = 0.0f;
-	double CURRENT_TIME = 0.0f;
-	double timeDifference;
 	int frameCounter = 0;
 	const double FPSsampleTime = 1.0f / 20.0f;
 
@@ -116,8 +114,8 @@ int main() {
 	// MAIN GAME LOOP
 	while (!engine.windowShouldClose() && !force_exit) {
 
-		CURRENT_TIME = glfwGetTime();
-		timeDifference = CURRENT_TIME - PREV_TIME;
+		double CURRENT_TIME = glfwGetTime();
+		double timeDifference = CURRENT_TIME - PREV_TIME;
 		frameCounter++;
 		if (timeDifference >= FPSsampleTime) {
 			std::string FPS = std::to_string((1.0f / timeDifference) * frameCounter);

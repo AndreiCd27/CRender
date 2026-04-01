@@ -1,6 +1,6 @@
 {
    Ignore_All_External_Libs
-   Memcheck: Leak
+   Memcheck:Leak
    match-leak-kinds: all
    obj:/usr/lib/*
 }

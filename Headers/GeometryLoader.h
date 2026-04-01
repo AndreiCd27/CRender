@@ -72,7 +72,7 @@ class Entity {
 protected:
 	Scene* ParentScene = nullptr;
 public:
-	Entity(Scene* scene, std::string _TagName);
+	Entity(Scene* scene, const std::string& _TagName);
 	virtual ~Entity() = default;
 
 	const std::string& GetTag() const;
@@ -90,7 +90,7 @@ protected:
 	AVector3 Position = AVector3(0.0f, 0.0f, 0.0f); // Translate Vector for X,Y,Z axis
 	AColor3 Color;
 public:
-	Transform(Scene* scene);
-	Transform(Scene* scene, std::string TagName);
+	explicit Transform(Scene* scene);
+	Transform(Scene* scene, const std::string& TagName);
 	virtual ~Transform() = default;
 };

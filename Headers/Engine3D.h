@@ -55,6 +55,10 @@ private:
 
 	~Engine3D() = default;
 
+	// We don't need a copy and equal constructor, we have a Singleton
+	Engine3D(const Engine3D&) = delete;
+	Engine3D& operator=(const Engine3D&) = delete;
+
 	void shadowPassStaticShader();
 	void shadowPassInstanceShader();
 	void renderPassStaticShader();
@@ -81,7 +85,7 @@ public:
 	void setupGeometryArrayObjects(const int drawStyle);
 
 	void setupInstanceVBO();
-	void DrawInstances(Blueprint* BLUEPRINT, Tile* TILE);
+	//void DrawInstances(Blueprint* BLUEPRINT, const Tile* TILE);
 
 	inline void setBackground(float R, float G, float B, float A) { backgroundColor = { R,G,B,A }; };
 
@@ -96,10 +100,6 @@ public:
 		return glfwWindowShouldClose(window); 
 	}
 	
-	inline Shader& getShader() { 
-		return shaderProgram; 
-	}
-
 	//OTHERS
 
 	void initGameFrame();

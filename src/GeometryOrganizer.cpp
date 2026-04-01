@@ -188,7 +188,7 @@ Scene::~Scene() {
 	}
 }
 
-Tile* Scene::FindTileForPosition(AVertex center, AVector3 Position) {
+Tile* Scene::FindTileForPosition(const AVertex& center, AVector3 Position) {
 	double cxd = (double)center.POS.x + Position.x;
 	double czd = (double)center.POS.z + Position.z;
 	unsigned int cBitsX = getCBits(cxd);
@@ -308,8 +308,8 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 
 	AVector3 vcenter = { 0.0f, 0.0f, 0.0f };
 	const float center_scalar = 1.0f / (float)vertices.size();
-
-	for (AVertex& v : vertices) {
+	
+	for (const AVertex& v : vertices) {
 		vcenter += v.POS;
 	}
 

@@ -4,7 +4,7 @@
 
 int Entity::contor = 0;
 
-Entity::Entity(Scene* scene, std::string _TagName) : TagName(_TagName) {
+Entity::Entity(Scene* scene, const std::string& _TagName) : TagName(_TagName) {
 	ParentScene = scene;
 	EID = contor;
 	contor++;
@@ -28,7 +28,7 @@ void Transform::Defaults() {
 Transform::Transform(Scene* scene) : Entity(scene, "Transform") {
 	Defaults();
 }
-Transform::Transform(Scene* scene, std::string TagName) : Entity(scene, TagName) {
+Transform::Transform(Scene* scene, const std::string& TagName) : Entity(scene, TagName) {
 	Defaults();
 }
 

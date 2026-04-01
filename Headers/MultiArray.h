@@ -67,7 +67,7 @@ class ArrayOrganizer {
 		std::fill(Array.begin() + h.offset + capacityOld, Array.begin() + h.offset + h.capacity, T());
 
 	}
-
+	/*
 	void ReservePow2(int HandleIndex, int pow) {
 		Handle& h = Handles[HandleIndex];
 		int capacityOld = h.capacity;
@@ -88,6 +88,7 @@ class ArrayOrganizer {
 		std::fill(Array.begin() + h.offset + capacityOld, Array.begin() + h.offset + h.capacity, T());
 
 	}
+	*/
 
 public:
 
@@ -113,11 +114,12 @@ public:
 	//void MoveAfter(int afterHandleID, int HandleID) {
 		//TODO
 	//}
+	/*
 	void MoveToEnd(int HandleID) {
 
 		int HandleIndex = ID_TO_INDEX[HandleID]; // (OLD INDEX)
 		if (HandleIndex == (int)Handles.size() - 1) return;
-		Handle& h = Handles[HandleIndex];
+		const Handle& h = Handles[HandleIndex];
 
 		std::vector<T> temp;
 		temp.resize(h.capacity);
@@ -145,6 +147,7 @@ public:
 
 		ID_TO_INDEX[HandleID] = (int)Handles.size() - 1;
 	}
+	*/
 	//void MoveToStart(int HandleID) {
 		//TODO
 	//}
@@ -190,7 +193,6 @@ public:
 					Handles[i].offset += incrrease;
 				}
 			}
-			h.capacity = capacityTarget;
 			Handles[HandleIndex].capacity = capacityTarget;
 		}
 
@@ -205,6 +207,7 @@ public:
 			i++;
 		}
 	}
+	
 
 	Handle GetHandleData(int HandleID) {
 		auto iterator = ID_TO_INDEX.find(HandleID);
@@ -231,7 +234,4 @@ public:
 		return !(ID_TO_INDEX.find(HandleID) == ID_TO_INDEX.end());
 	}
 
-	std::vector<Handle>& GetAllHandles() {
-		return Handles;
-	}
 };

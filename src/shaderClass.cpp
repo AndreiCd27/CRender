@@ -115,7 +115,7 @@ void Shader::compileErrors(unsigned int shader, const char* type)
 
 GLuint Shader::GetUniformLocation(const std::string& uniformName) {
 	if (UNIFORM_LOCATIONS.find(uniformName) == UNIFORM_LOCATIONS.end()) {
-		UNIFORM_LOCATIONS[uniformName] = glGetUniformLocation(ID, uniformName.c_str());
+		UNIFORM_LOCATIONS.try_emplace(uniformName, glGetUniformLocation(ID, uniformName.c_str()));
 	}
 	return UNIFORM_LOCATIONS[uniformName];
 }

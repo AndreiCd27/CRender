@@ -46,7 +46,15 @@ public:
 	Scene();
 	~Scene();
 
-	Tile* FindTileForPosition(AVertex center, AVector3 Position);
+	// Copy and equal constructor are FORBIDEN
+	// This is a design choice, beacause one clone of a Scene
+	// With a big memory space (on the heap) may crash the program
+	// Or trigger many heap reallocations
+	// A new Scene may be added from zero
+	Scene(const Scene&) = delete;
+	Scene& operator=(const Scene&) = delete;
+
+	Tile* FindTileForPosition(const AVertex& center, AVector3 Position);
 
 	Blueprint* CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GLuint>& indicies);
 	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, AVector3 pos, const std::string& name);
@@ -92,7 +100,6 @@ public:
 	Tile(Tile* _Parent, uint16_t _TileX, uint16_t _TileZ, uint16_t _Level);
 	~Tile();
 	void DivideTile(uint16_t i, uint16_t j);
-	uint16_t GetLevel() { return Level; }
 
 	std::vector<Tile*> RecurseInTiles();
 	void RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs);
@@ -102,5 +109,5 @@ public:
 	const std::vector<int>& GetRelatedHandleIDs();
 	void PushHandleID(int HandleID, ArrayOrganizer<InstanceData>& insArrayOrg);
 
-	friend Tile* Scene::FindTileForPosition(AVertex center, AVector3 Position);
+	friend Tile* Scene::FindTileForPosition(const AVertex& center, AVector3 Position);
 };
