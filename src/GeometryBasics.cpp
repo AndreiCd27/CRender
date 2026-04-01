@@ -94,4 +94,4 @@ AVertex::AVertex(float x, float y, float z, int R, int G, int B, int A) : POS(x,
 	RGBA = AColor3(R, G, B, A);
 }
 AVertex::AVertex(AVector3 _POS, AVector3 _NORMAL, int R, int G, int B, int A, float U, float V) : 
-	POS(_POS), NORMAL(_NORMAL), RGBA(R,G,B,A), UV(U, V) {}
+	POS(_POS), RGBA(R, G, B, A), NORMAL(_NORMAL), UV(U, V) {}
