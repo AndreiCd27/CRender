@@ -82,8 +82,6 @@ public:
 	void SetColor(AColor3 _Color);
 	void SetTile(Tile* _tile);
 
-	AVector3 GetLocalPos();
-
 	// ---------- SET PARENT
 
 	void SetParent(std::weak_ptr<Instance> _Parent);

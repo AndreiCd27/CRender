@@ -44,9 +44,6 @@ void Instance::Update_Cascade() {
 	}
 }
 
-AVector3 Instance::GetLocalPos() {
-	return LocalPos;
-}
 void Instance::SetLocalPos() {
 	std::shared_ptr<Instance> P_ptr = Parent.lock();
 

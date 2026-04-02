@@ -7,6 +7,9 @@ const char* WINDOW_TITLE = "window";
 
 #include "Engine3D.h"
 
+#define Scene engine.getScene()
+#define workspace Scene->GetWorkspace()
+
 // ENVIROMENT VARIABLE, binds to SIGTERM such that Engine3D is terminated
 //  without memory leaks and the cleanup process succeds
 bool force_exit = false;
@@ -31,11 +34,11 @@ int main() {
 
 	// HERE WE CREATE OUR OBJECTS /////////////////////////////////////////////////
 	
-	Blueprint* humanMesh = engine.getScene()->LoadSTLGeomFile("resources/BASEmodel.stl", 8.0f);
+	Blueprint* humanMesh = Scene->LoadSTLGeomFile("resources/BASEmodel.stl", 8.0f);
 	if (humanMesh) {
 		std::cout << "Created: Human \n";
 		for (int i = 0; i < 4; i++) {
-			auto human = engine.getScene()->CreateInstance(humanMesh, AVector3(), 
+			auto human = Scene->CreateInstance(humanMesh, AVector3(), 
 				"Human " + std::to_string(i) //TAG NAME
 			);
 			human->SetPosition(AVector3(0.0f + i * 40.0f, 2.0f, -25.0f));
@@ -47,12 +50,12 @@ int main() {
 		delete humanMesh;
 	}
 	
-	Blueprint* cubeB = engine.getScene()->CreateCube(10.0f);
+	Blueprint* cubeB = Scene->CreateCube(10.0f);
 
 	std::shared_ptr<Instance> first = nullptr;
 	std::shared_ptr<Instance> prevI = nullptr;
 	for (int i = 0; i < 10; i++) {
-		auto I = engine.getScene()->CreateInstance(cubeB, AVector3(),
+		auto I = Scene->CreateInstance(cubeB, AVector3(),
 			"Cube " + std::to_string(i)
 		);
 		if (prevI) {
@@ -66,15 +69,15 @@ int main() {
 		prevI = I;
 	}
 
-	auto plane = engine.getScene()->CreateInstance(cubeB, AVector3(), "Plane");
+	auto plane = Scene->CreateInstance(cubeB, AVector3(), "Plane");
 	plane->SetPosition(AVector3(0.0f, -5.0f, 0.0f));
 	plane->SetSize(AVector3(20.0f, 1.0f, 20.0f));
 	plane->SetColor(AColor3(50, 255, 25, 255));
 
 	std::vector<AVertex> Verticies = { AVertex(-4.8f, 0.0f, -4.0f), AVertex(3.5f, 0.0f, -3.75f), AVertex(1.6f, 0.0f, 4.15f), AVertex(-2.65f, 0.0f, 2.75f) };
-	Blueprint* prismB = engine.getScene()->CreatePrism(Verticies, 4, 10.0f);
+	Blueprint* prismB = Scene->CreatePrism(Verticies, 4, 10.0f);
 
-	auto triPrism = engine.getScene()->CreateInstance(prismB, AVector3(), "TriPrism");
+	auto triPrism = Scene->CreateInstance(prismB, AVector3(), "TriPrism");
 	triPrism->SetColor(255, 255, 0, 255);
 	triPrism->SetPosition(AVector3(-30.0f, -5.0f, -25.0f));
 	triPrism->SetSize(AVector3(5.0f, 5.0f, 5.0f));
@@ -107,9 +110,7 @@ int main() {
 
 	int cntt = 0;
 
-	Scene* scene = engine.getScene();
-
-	scene->DEBUG_PrintInstanceHierarchy(scene->GetWorkspace(), 0, 10, false);
+	Scene->DEBUG_PrintInstanceHierarchy(workspace, 0, 10, false);
 
 	// MAIN GAME LOOP
 	while (!engine.windowShouldClose() && !force_exit) {
@@ -131,7 +132,7 @@ int main() {
 			first->SetPosition(AVector3(dt/2.0f, 5.0f, 0.0f));
 
 			std::string tag = "Human 3";
-			auto workspace_sptr = scene->GetWorkspace().lock();
+			auto workspace_sptr = workspace.lock();
 			auto child = workspace_sptr->FirstChild(tag); // Finds first Child with Tag "Human 3"
 
 			if (child) child->SetRotation(AVector3(-90.0f + dt, 0.0f, 0.0f));
@@ -172,7 +173,7 @@ int main() {
 
 	std::cout << "Game Instance Hierarchy before cleanup! \n";
 
-	scene->DEBUG_PrintInstanceHierarchy(scene->GetWorkspace(), 0, 10, true);
+	Scene->DEBUG_PrintInstanceHierarchy(workspace, 0, 10, true);
 
 	std::cout << "Cleaning up Engine3D... \n";
 

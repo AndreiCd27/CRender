@@ -8,3 +8,4 @@ Comentariile din codul sursa au fost redactate in limba engleza pentru a putea f
 ## Arhitectura
 
 ![Diagrama Claselor (Top Level)](https://github.com/AndreiCd27/CRender/blob/main/Gallery/ClassDiagramTopLevel.png)
+![Diagrama Claselor (Low Level)](https://github.com/AndreiCd27/CRender/blob/main/Gallery/ClassDiagramLowLevel.png)
