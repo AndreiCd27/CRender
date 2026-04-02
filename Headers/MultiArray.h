@@ -200,7 +200,7 @@ public:
 	
 	void print() {
 		int i = 0;
-		for (Handle& h : Handles) {
+		for (const Handle& h : Handles) {
 			std::cout << i << ": ID = " << INDEX_TO_ID[i] << ", OFFSET = " << h.offset << ", SIZE = " << h.size << ", CAPACITY = " << h.capacity << "\n";
 			i++;
 		}

@@ -106,10 +106,6 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 
 	const float center_scalar = 1.0f / (float)vertices.size();
 
-	for (const AVertex& v : vertices) {
-		vcenter += v.POS;
-	}
-
 	vcenter = vcenter * center_scalar;
 
 	blueprint->Center.POS = vcenter;
