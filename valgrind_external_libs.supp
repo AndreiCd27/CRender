@@ -1,6 +1,6 @@
 {
-   Ignore_All_External_Libs
+   ignore_glfw_leaks
    Memcheck:Leak
-   match-leak-kinds: all
-   obj:/usr/lib/*
+   ...
+   fun:glfwInit
 }
