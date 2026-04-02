@@ -215,6 +215,7 @@ public:
 		return Handles[iterator->second]; // Avoid another look-up in the unordered map
 	}
 
+	/* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 	const T* GetPointerFromHandle(int HandleID) {
 		auto iterator = ID_TO_INDEX.find(HandleID);
 		if (iterator == ID_TO_INDEX.end()) {
@@ -223,6 +224,7 @@ public:
 		int i = Handles[ID_TO_INDEX[HandleID]].offset;
 		return &Array[i];
 	}
+	*/
 
 	std::vector<T>& GetMultiArray() {
 		return Array;

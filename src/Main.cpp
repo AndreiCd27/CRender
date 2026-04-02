@@ -94,7 +94,7 @@ int main() {
 	}
 	// GetParent method
 	auto parent = triPrism->GetParent();
-	if (&*parent == &*plane) {
+	if (parent == plane) {
 		std::cout << "These objects are the same \n";
 	}
 	// AllChildrenWith method
@@ -122,7 +122,7 @@ int main() {
 		// We can use the BlueprintID of an Instance to make a new Instance
 		int cube1id = cube1->GetBlueprintID();
 		Blueprint* cubBlueprint = Scene->GetBlueprints()[cube1id];
-		if (&*cubBlueprint == &*cubeB) std::cout << "Same blueprint \n";
+		if (cubBlueprint == cubeB) std::cout << "Same blueprint \n";
 
 		auto cube2 = Scene->CreateInstance(cubBlueprint,"Cube 1");
 		cube2->SetParent(firstcube);

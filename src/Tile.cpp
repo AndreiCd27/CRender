@@ -163,9 +163,12 @@ void Tile::PushHandleID(int HandleID, ArrayOrganizer<InstanceData>& insArrayOrg)
 }
 
 void Tile::RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs) {
-	for (const int& hID : this->GetRelatedHandleIDs()) {
-		HandleIDs.push_back(hID);
-	}
+	//for (const int& hID : this->GetRelatedHandleIDs()) {
+	//	HandleIDs.push_back(hID);
+	//}
+	std::copy(this->GetRelatedHandleIDs().begin(), this->GetRelatedHandleIDs().end(),
+		std::back_inserter(HandleIDs)
+	);
 	if (this->Divisions[0][0] != nullptr) this->Divisions[0][0]->RecurseInTilesOutputHandleIDs(HandleIDs);
 	if (this->Divisions[0][1] != nullptr) this->Divisions[0][1]->RecurseInTilesOutputHandleIDs(HandleIDs);
 	if (this->Divisions[1][0] != nullptr) this->Divisions[1][0]->RecurseInTilesOutputHandleIDs(HandleIDs);

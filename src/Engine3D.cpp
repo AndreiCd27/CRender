@@ -40,10 +40,16 @@ void Engine3D::DEBUG_ArrayOrganizers() {
 
 	std::cout << "VBO Total Bytes: " << getScene()->GetVBO_Organizer().GetMultiArray().size() * sizeof(AVertex) << "\n";
 	std::cout << "EBO Total Bytes: " << getScene()->GetEBO_Organizer().GetMultiArray().size() * sizeof(GLuint) << "\n";
+	std::cout << "\nPrinting VBO_Organizer... \n";
+	getScene()->GetVBO_Organizer().print();
+	std::cout << "Printing EBO_Organizer... \n";
+	getScene()->GetEBO_Organizer().print();
 
 	std::cout << "Instances Size: " << getScene()->GetInstanceOrganizer().GetMultiArray().size() << "\n";
 	std::cout << "VBO Size: " << getScene()->GetVBO_Organizer().GetMultiArray().size() << "\n";
 	std::cout << "EBO Size: " << getScene()->GetEBO_Organizer().GetMultiArray().size() << "\n";
+	std::cout << "Printing InstanceOrganizer... \n";
+	getScene()->GetInstanceOrganizer().print();
 }
 
 int Engine3D::setupWindow(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char * WINDOW_TITLE) {
@@ -95,9 +101,10 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 	VBO_1.Setup(vert.data(), vert.size() * sizeof(AVertex), drawStyle);
 	EBO_1.Setup(indicies.data(), indicies.size() * sizeof(GLuint), drawStyle);
 
-	if (DEBUG)std::cout << "Total VBO elements: " << vert.size() << "\n";
-
-	if (DEBUG)std::cout << "VBO & EBO setup complete \n";
+	if (DEBUG) {
+		std::cout << "Total VBO elements: " << vert.size() << "\n";
+		std::cout << "VBO & EBO setup complete \n";
+	}
 
 	GLsizei stride = sizeof(AVertex); //32 bytes
 	

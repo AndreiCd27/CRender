@@ -1,5 +1,6 @@
 
 #include "Scene.h"
+#include <numeric>
 
 std::weak_ptr<const Instance> Scene::GetWorkspace() {
 	return std::weak_ptr<const Instance>(workspace);
@@ -34,11 +35,13 @@ void Scene::DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, in
 	}
 }
 
+/* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 Handle Scene::GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET) {
 	if (TARGET == VBO_ORGANIZER_TARGET) return VBO_Organizer.GetHandleData(BLUEPRINT->GetID());
 	if (TARGET == EBO_ORGANIZER_TARGET) return EBO_Organizer.GetHandleData(BLUEPRINT->GetID());
 	throw SceneException("Can't extract Blueprint Handle from INSTANCE_ORGANIZER or INVALID TARGET", 1);
 }
+*/
 
 ArrayOrganizer<InstanceData>& Scene::GetInstanceOrganizer() {
 	return InstanceOrganizer;
@@ -92,9 +95,15 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 	VBO_Organizer.PushMultipleData(generatedHandleID, vertices);
 	EBO_Organizer.PushMultipleData(generatedHandleID, indicies);
 
-	// Calculate Center
+	// Calculate Center using std::accumulate
+	// From cppreference:
+	// template< class InputIt, class T, class BinaryOp > T accumulate(InputIt first, InputIt last, T init, BinaryOp op);
+	AVector3 vcenter = std::accumulate(vertices.begin(), vertices.end(), 
+		AVector3(0.0f, 0.0f, 0.0f), [](AVector3 sumvec3, const AVertex& vert) {
+			return sumvec3 + vert.POS;
+		}
+	);
 
-	AVector3 vcenter = { 0.0f, 0.0f, 0.0f };
 	const float center_scalar = 1.0f / (float)vertices.size();
 
 	for (const AVertex& v : vertices) {

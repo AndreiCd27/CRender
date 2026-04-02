@@ -86,12 +86,10 @@ void AVector3::DEBUG_Print() const {
 }
 
 
-AVertex::AVertex(float x, float y, float z) : POS(x,y,z) {
-	NORMAL = AVector3(0.0f, 1.0f, 0.0f);
-}
-AVertex::AVertex(float x, float y, float z, int R, int G, int B, int A) : POS(x,y,z) {
-	NORMAL = AVector3(0.0f, 1.0f, 0.0f);
-	RGBA = AColor3(R, G, B, A);
-}
+AVertex::AVertex(float x, float y, float z) : POS(x,y,z), NORMAL(AVector3(0.0f, 1.0f, 0.0f)) {}
+
+AVertex::AVertex(float x, float y, float z, int R, int G, int B, int A) 
+	: POS(x,y,z), RGBA(R, G, B, A), NORMAL(AVector3(0.0f, 1.0f, 0.0f)) {}
+
 AVertex::AVertex(AVector3 _POS, AVector3 _NORMAL, int R, int G, int B, int A, float U, float V) : 
 	POS(_POS), RGBA(R, G, B, A), NORMAL(_NORMAL), UV(U, V) {}

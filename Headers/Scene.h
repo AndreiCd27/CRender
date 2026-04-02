@@ -2,8 +2,8 @@
 #include "Instance.h"
 #include "MultiArray.h"
 
-#include "stl_reader.h" // .stl geometry file reader by sreiter https://github.com/sreiter/stl_reader
-
+// .stl geometry file reader by sreiter https://github.com/sreiter/stl_reader
+#include <stl_reader.h>
 
 #define TILE_MAXSCALE_FACTOR 14
 #define MAX_TILE_LEVEL 14

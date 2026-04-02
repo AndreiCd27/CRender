@@ -191,11 +191,18 @@ std::shared_ptr<Instance> Instance::FirstChild(int EntityID) const {
 
 const std::vector<std::shared_ptr<Instance>>& Instance::GetChildren() { return Children; }
 
+// Using std::copy_if
+// Example:  (from cppreference)
+/*
+	std::copy_if(from_vector.begin(), from_vector.end(),
+				 std::back_inserter(to_vector),
+				 [](int x) { return x % 3 == 0; });
+*/
 std::vector<std::shared_ptr<Instance>> Instance::AllChildrenWith(const std::string& _TagName) {
 	std::vector<std::shared_ptr<Instance>> Instance_PTRs;
-	for (auto& c : Children) {
-		if (c->GetTag() == _TagName) Instance_PTRs.push_back(c);
-	}
+	std::copy_if(Children.begin(), Children.end(), std::back_inserter(Instance_PTRs),
+		[_TagName](const std::shared_ptr<Instance>& c) { return c->GetTag() == _TagName; }
+	);  // ^-- "capture list" - here we put variables we need inside function ---^
 	return Instance_PTRs;
 }
 
