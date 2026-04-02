@@ -1,7 +1,5 @@
 #pragma once
 
-#include "stl_reader.h" // .stl geometry file reader by sreiter https://github.com/sreiter/stl_reader
-
 #include "shaderClass.h"
 #include "GeometryOrganizer.h"
 #include "VBO.h"
@@ -9,6 +7,35 @@
 #include "VAO.h"
 #include "Camera.h"
 #include "Texture.h"
+
+class Window {
+	// GLFW window object
+	GLFWwindow* window = nullptr;
+	int height = 0;
+	int width = 0;
+	float aspectRatio = 0.0f;
+public:
+
+	bool CreateWindow(int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_TITLE);
+
+	void Terminate();
+
+	GLFWwindow* getWindow() { return window; }
+
+	inline int windowShouldClose() {
+		return glfwWindowShouldClose(window);
+	}
+
+	inline const float getAspectRatio() const {
+		return aspectRatio;
+	}
+	inline const int getHeight() const {
+		return height;
+	}
+	inline const int getWidth() const {
+		return width;
+	}
+};
 
 //bool _Engine3D_Started = false;
 
@@ -25,18 +52,14 @@ private:
 
 	Texture depthTextureObject;
 
-	// GLFW window object
-	GLFWwindow* window = nullptr;
-	int windowHeight = 0;
-	int windowWidth = 0;
-	float windowAspectRatio = 0.0f;
-
 	// Shader
 	Shader shaderProgram;
 	Shader instanceProgram;
 	VAO VAO_1;
 	VBO VBO_1;
 	EBO EBO_1;
+
+	Window window;
 
 	GLuint instanceVBO;
 	bool InstanceVBOSetupComplete = false;
@@ -48,6 +71,8 @@ private:
 		float B = 0.5f; 
 		float A = 1.0f;
 	} backgroundColor;
+
+	// Private methods
 
 	void registerCameraInput(float FOVdeg, float zNear, float zFar);
 
@@ -71,7 +96,9 @@ public:
 
 	// SETERS
 
-	int setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char* WINDOW_TITLE);
+	void setWindowTitle(const std::string& winTitle);
+
+	int setupWindow(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char* WINDOW_TITLE);
 
 	void setCamera(float posX, float posY, float posZ);
 	void setSunCamera(float posX, float posY, float posZ);
@@ -94,10 +121,10 @@ public:
 
 	Scene* getScene();
 
-	GLFWwindow* getWindow() { return window; }
+	Tile* getVisibleCameraFrustum();
 
 	inline int windowShouldClose() { 
-		return glfwWindowShouldClose(window); 
+		return window.windowShouldClose(); 
 	}
 	
 	//OTHERS
@@ -109,15 +136,6 @@ public:
 	void renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float zFar);
 
 	void DrawAllInstances();
-
-	Tile* getVisibleCameraFrustum();
-
-	Blueprint* LoadSTLGeomFile(const char* filePath, float scale);
-	
-
-	Blueprint* CreatePrism(const std::vector<AVertex>& vertices, int VertexNumber, float height);
-	Blueprint* CreateRectPrism(float length, float width, float height);
-	Blueprint* CreateCube(float length);
 	
 	void DEBUG_showCameraVectors();
 	void DEBUG_ArrayOrganizers();

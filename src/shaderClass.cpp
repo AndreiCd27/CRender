@@ -114,10 +114,10 @@ void Shader::compileErrors(unsigned int shader, const char* type)
 }
 
 GLuint Shader::GetUniformLocation(const std::string& uniformName) {
-	if (UNIFORM_LOCATIONS.find(uniformName) == UNIFORM_LOCATIONS.end()) {
-		UNIFORM_LOCATIONS.try_emplace(uniformName, glGetUniformLocation(ID, uniformName.c_str()));
+	if (uniforms.find(uniformName) == uniforms.end()) {
+		uniforms.try_emplace(uniformName, glGetUniformLocation(ID, uniformName.c_str()));
 	}
-	return UNIFORM_LOCATIONS[uniformName];
+	return uniforms[uniformName];
 }
 
 void Shader::SetUniformMatrix4by4(const std::string& uniformName, glm::mat4 Mat4) {

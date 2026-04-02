@@ -328,3 +328,123 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 std::vector<Blueprint*>& Scene::GetBlueprints() {
 	return Blueprints;
 }
+
+
+Blueprint* Scene::LoadSTLGeomFile(const char* fileName, float scale) {
+
+	try {
+		std::vector<float> coords, normals;
+		std::vector<unsigned int> tris, solids;
+
+		stl_reader::ReadStlFile(fileName, coords, normals, tris, solids);
+
+		std::vector<AVertex> vert;
+		std::vector<GLuint> indicies;
+
+		// Avoid duplicate verticies by using a map from the
+		// Original vertex index in the STL file to 
+		// A new index to be put in indicies 
+		// (inserted even if vertex index is already in map)
+		std::unordered_map<int, GLuint> uniqueVert;
+
+		const size_t totalIndices = tris.size();
+
+		//std::cout <<"Mesh coord count: " << coords.size() << " trig count: " << tris.size()<<"\n";
+
+		for (int i = 0; i < (int)totalIndices; i++) {
+			int STLfileIndex = tris[i];
+
+			if (uniqueVert.find(STLfileIndex) == uniqueVert.end()) {
+				// Found a unique vertex that is not a duplicate
+				// Add to our map
+				uniqueVert.try_emplace(STLfileIndex, (GLuint)vert.size());
+
+				int coordINDEX = 3 * STLfileIndex;
+				const float* c = &coords[coordINDEX];
+
+				vert.push_back(AVertex(c[0] * scale, c[1] * scale, c[2] * scale, 200, 200, 200, 255));
+			}
+
+			indicies.push_back(uniqueVert[STLfileIndex]);
+		}
+
+		//std::cout << "Mesh created \n";
+
+		Blueprint::CalculateSurfaceNormals(vert, indicies);
+
+		return CreateBlueprint(vert, indicies);
+	}
+	catch (std::exception& e) {
+		std::cout << e.what() << std::endl;
+	}
+
+	return nullptr;
+}
+
+Blueprint* Scene::CreatePrism(const std::vector<AVertex>& vertices, int VertexNumber, float height) {
+
+	std::vector<GLuint> indicies;
+
+	std::vector<AVertex> V = vertices;
+	V.reserve(VertexNumber * 2);
+
+	if ((int)vertices.size() < 3) { std::cout << "Mesh does not contain any triangles \n"; return nullptr; };
+
+	// 0 -> 1 -> 2
+	// |  / |  / |
+	// | /  | /  |
+	// 3 -> 4 -> 5
+
+	for (int i = 0; i < VertexNumber; i++) {
+		AVertex vclone = vertices[i];
+		vclone.POS.y += height;
+		V.push_back(vclone); // create bottom vertex
+	}
+	for (int i = 0; i < VertexNumber - 1; i++) {
+		//LATERAL FACE 1
+		indicies.push_back(i);
+		indicies.push_back(VertexNumber + i);
+		indicies.push_back(i + 1);
+		//LATERAL FACE 2
+		indicies.push_back(VertexNumber + i);
+		indicies.push_back(VertexNumber + i + 1);
+		indicies.push_back(i + 1);
+	}
+
+	//LATERAL FACE 1
+	indicies.push_back(VertexNumber - 1);
+	indicies.push_back(2 * VertexNumber - 1);
+	indicies.push_back(0);
+	//LATERAL FACE 2
+	indicies.push_back(VertexNumber);
+	indicies.push_back(0);
+	indicies.push_back(2 * VertexNumber - 1);
+
+	for (int i = 1; i < VertexNumber - 1; i++) {
+		//BOTTOM FACE
+		indicies.push_back(0);
+		indicies.push_back(i + 1);
+		indicies.push_back(i);
+
+		//TOP FACE
+		indicies.push_back(VertexNumber);
+		indicies.push_back(VertexNumber + i + 1);
+		indicies.push_back(VertexNumber + i);
+	}
+
+	return CreateBlueprint(V, indicies);
+}
+
+Blueprint* Scene::CreateRectPrism(float length, float width, float height) {
+	std::vector<AVertex> v;
+	v.resize(4);
+	v[0] = AVertex(-length / 2.0f, -height / 2.0f, -width / 2.0f, 200, 200, 200, 255);
+	v[1] = AVertex(length / 2.0f, -height / 2.0f, -width / 2.0f, 200, 200, 200, 255);
+	v[2] = AVertex(length / 2.0f, -height / 2.0f, width / 2.0f, 200, 200, 200, 255);
+	v[3] = AVertex(-length / 2.0f, -height / 2.0f, width / 2.0f, 200, 200, 200, 255);
+	return CreatePrism(v, 4, height);
+}
+
+Blueprint* Scene::CreateCube(float length) {
+	return CreateRectPrism(length, length, length);
+}

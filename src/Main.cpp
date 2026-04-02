@@ -24,14 +24,14 @@ int main() {
 	Engine3D& engine = *Engine3D::GetEngine3D();
 	std::cout << "Engine initialized \n";
 
-	int success = engine.setupGLFW(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
+	int success = engine.setupWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
 	if (!success) { std::cerr << "Error at setup \n"; Engine3D::EngineTerminate(); return -1; }
 
 	engine.setBackground(0.2f, 0.3f, 0.8f, 1.0f);
 
 	// HERE WE CREATE OUR OBJECTS /////////////////////////////////////////////////
 	
-	Blueprint* humanMesh = engine.LoadSTLGeomFile("resources/BASEmodel.stl", 8.0f);
+	Blueprint* humanMesh = engine.getScene()->LoadSTLGeomFile("resources/BASEmodel.stl", 8.0f);
 	if (humanMesh) {
 		std::cout << "Created: Human \n";
 		for (int i = 0; i < 4; i++) {
@@ -47,7 +47,7 @@ int main() {
 		delete humanMesh;
 	}
 	
-	Blueprint* cubeB = engine.CreateCube(10.0f);
+	Blueprint* cubeB = engine.getScene()->CreateCube(10.0f);
 
 	std::shared_ptr<Instance> first = nullptr;
 	std::shared_ptr<Instance> prevI = nullptr;
@@ -72,7 +72,7 @@ int main() {
 	plane->SetColor(AColor3(50, 255, 25, 255));
 
 	std::vector<AVertex> Verticies = { AVertex(-4.8f, 0.0f, -4.0f), AVertex(3.5f, 0.0f, -3.75f), AVertex(1.6f, 0.0f, 4.15f), AVertex(-2.65f, 0.0f, 2.75f) };
-	Blueprint* prismB = engine.CreatePrism(Verticies, 4, 10.0f);
+	Blueprint* prismB = engine.getScene()->CreatePrism(Verticies, 4, 10.0f);
 
 	auto triPrism = engine.getScene()->CreateInstance(prismB, AVector3(), "TriPrism");
 	triPrism->SetColor(255, 255, 0, 255);
@@ -121,7 +121,7 @@ int main() {
 			std::string FPS = std::to_string((1.0f / timeDifference) * frameCounter);
 			std::string msPerFrame = std::to_string((timeDifference / frameCounter) * 1000);
 			std::string winTitle = "WINDOW | " + FPS + " FPS | " + msPerFrame + " ms/frame";
-			glfwSetWindowTitle(engine.getWindow(), winTitle.c_str());
+			engine.setWindowTitle(winTitle);
 			PREV_TIME = CURRENT_TIME;
 			frameCounter = 0;
 

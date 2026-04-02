@@ -17,12 +17,10 @@ std::string get_file_contents(const char* filename);
 
 class Shader {
 private:
-	std::unordered_map<std::string, GLuint> UNIFORM_LOCATIONS;
-public:
-
+	std::unordered_map<std::string, GLuint> uniforms;
 	bool SetupComplete = false;
-
 	GLuint ID;
+public:
 	Shader() = default;
 	void Setup(const char* vertFileName, const char* fragFileName);
 	void Activate();
@@ -36,4 +34,6 @@ public:
 	void SetUniformMatrix4by4(const std::string& uniformName, glm::mat4 Mat4);
 	void SetUniformVector3(const std::string& uniformName, glm::vec3 Vec3);
 	void SetUniformVector3(const std::string& uniformName, AVector3 Vec3);
+
+	inline bool GetCompleteStatus() { return SetupComplete; }
 };

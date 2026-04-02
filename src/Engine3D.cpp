@@ -3,11 +3,48 @@
 #include "Engine3D.h"
 #include <cstring>
 
+bool Window::CreateWindow(int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_TITLE) {
+	// INITIALIZE GLFW
+	glfwInit();
+	// SOME SPECIFICATIONS FOR OUR OPENGL VERSION THAT WE SEND TO GLFW
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	//CORE profile from OPENGL; only modern functions
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//Create the WINDOW OBJECT with our defined width and height and title
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
+	//Error checking if anything went wrong in the window creating process
+	if (window == nullptr) {
+		std::cout << "Error when creating window \n";
+		return false;
+	}
+	//Tell GLFW we are using our created window as it's context
+	glfwMakeContextCurrent(window);
+
+	width = WINDOW_WIDTH;
+	height = WINDOW_HEIGHT;
+	aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+
+	return true;
+}
+
+void Window::Terminate() {
+	if (window != nullptr) {
+		glfwDestroyWindow(window);
+		//Terminate GLFW
+		glfwTerminate();
+	}
+}
+
 Engine3D* Engine3D::engine = nullptr;
 
 Engine3D* Engine3D::GetEngine3D() {
 	if (!engine) engine = new Engine3D();
 	return engine;
+}
+
+void Engine3D::setWindowTitle(const std::string& winTitle) {
+	glfwSetWindowTitle(window.getWindow(), winTitle.c_str());
 }
 
 void Engine3D::setCamera(float posX, float posY, float posZ) {
@@ -42,32 +79,18 @@ void Engine3D::DEBUG_ArrayOrganizers() {
 	std::cout << "EBO Size: " << getScene()->GetEBO_Organizer().GetMultiArray().size() << "\n";
 }
 
-int Engine3D::setupGLFW(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char * WINDOW_TITLE) {
-	// INITIALIZE GLFW
-	glfwInit();
-	// SOME SPECS FOR OUR OPENGL VERSION THAT WE SEND TO GLFW
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//CORE profile from OPENGL; only modern functions
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	//Create the WINDOW OBJECT with our defined width and height and title
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
-	//Error checking if anything went wrong in the window creating process
-	if (window == nullptr) {
+int Engine3D::setupWindow(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char * WINDOW_TITLE) {
+	
+	bool success = window.CreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
+	if (!success) {
 		std::cout << "Error when creating window \n";
 		EngineTerminate();
-		return -1; //
+		return -1;
 	}
-	//Tell GLFW we are using our created window as it's context
-	glfwMakeContextCurrent(window);
-
 	//Load GLAD (needed to configure OpenGL)
 	gladLoadGL();
 	//Specify Viewport to OpenGL ( from (0,0) to (W_WIDTH,W_HEIGHT) )
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-	windowWidth = WINDOW_WIDTH;
-	windowHeight = WINDOW_HEIGHT;
-	windowAspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
 	return 1;
 }
 
@@ -195,9 +218,9 @@ void Engine3D::initGameFrame() {
 
 
 void Engine3D::registerCameraInput(float FOVdeg, float zNear, float zFar) {
-	UserCamera.Inputs(window);
+	UserCamera.Inputs(window.getWindow());
 	//UserCamera.Matrix(FOVdeg, zNear, zFar, windowAspectRatio, shaderProgram);
-	UserCamera.Matrix(FOVdeg, zNear, zFar, windowAspectRatio, instanceProgram);
+	UserCamera.Matrix(FOVdeg, zNear, zFar, window.getAspectRatio(), instanceProgram);
 }
 
 void Engine3D::DrawAllInstances() {
@@ -338,7 +361,7 @@ void Engine3D::renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float z
 
 	this->registerCameraInput(FOVdeg, zNear, zFar);
 
-	glViewport(0, 0, windowWidth, windowHeight);
+	glViewport(0, 0, window.getWidth(), window.getHeight());
 	//Clear the BACK BUFFER and assign our color to it
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -349,7 +372,7 @@ void Engine3D::renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float z
 	STATIC_SHADER ? renderPassStaticShader() : renderPassInstanceShader();
 
 	//Swap BACK BUFFER with FRONT BUFFER
-	glfwSwapBuffers(window);
+	glfwSwapBuffers(window.getWindow());
 	// Get events (for controls, event handling, closing, etc.)
 	glfwPollEvents();
 }
@@ -363,143 +386,20 @@ Tile* Engine3D::getVisibleCameraFrustum() {
 void Engine3D::EngineTerminate() {
 
 	//Delete our VAOs, VBOs, EBOs
-	if (engine->VAO_1.SetupComplete) engine->VAO_1.Delete();
-	if (engine->VBO_1.SetupComplete) engine->VBO_1.Delete();
-	if (engine->EBO_1.SetupComplete) engine->EBO_1.Delete();
+	if (engine->VAO_1.GetCompleteStatus()) engine->VAO_1.Delete();
+	if (engine->VBO_1.GetCompleteStatus()) engine->VBO_1.Delete();
+	if (engine->EBO_1.GetCompleteStatus()) engine->EBO_1.Delete();
 
 	//Delete instanceVBO
 	if (engine->InstanceVBOSetupComplete) glDeleteBuffers(1, &engine->instanceVBO);
 
 	//Delete shader
-	if (engine->shaderProgram.SetupComplete) engine->shaderProgram.Delete();
-	if (engine->instanceProgram.SetupComplete) engine->instanceProgram.Delete();
+	if (engine->shaderProgram.GetCompleteStatus()) engine->shaderProgram.Delete();
+	if (engine->instanceProgram.GetCompleteStatus()) engine->instanceProgram.Delete();
 
 	//Destroy WINDOW OBJECT
-	if (engine->window != nullptr) {
-		glfwDestroyWindow(engine->window);
-		//Terminate GLFW
-		glfwTerminate();
-	}
+	engine->window.Terminate();
 
 	delete engine;
 
-}
-
-Blueprint* Engine3D::LoadSTLGeomFile(const char* fileName, float scale) {
-
-	try {
-		std::vector<float> coords, normals;
-		std::vector<unsigned int> tris, solids;
-
-		stl_reader::ReadStlFile(fileName, coords, normals, tris, solids);
-
-		std::vector<AVertex> vert;
-		std::vector<GLuint> indicies;
-
-		// Avoid duplicate verticies by using a map from the
-		// Original vertex index in the STL file to 
-		// A new index to be put in indicies 
-		// (inserted even if vertex index is already in map)
-		std::unordered_map<int, GLuint> uniqueVert;
-
-		const size_t totalIndices = tris.size();
-
-		//std::cout <<"Mesh coord count: " << coords.size() << " trig count: " << tris.size()<<"\n";
-
-		for (int i = 0; i < (int)totalIndices; i++) {
-			int STLfileIndex = tris[i];
-
-			if (uniqueVert.find(STLfileIndex) == uniqueVert.end()) {
-				// Found a unique vertex that is not a duplicate
-				// Add to our map
-				uniqueVert.try_emplace(STLfileIndex, (GLuint)vert.size());
-
-				int coordINDEX = 3 * STLfileIndex;
-				const float* c = &coords[coordINDEX];
-
-				vert.push_back(AVertex(c[0] * scale, c[1] * scale, c[2] * scale, 200, 200, 200, 255));
-			}
-
-			indicies.push_back(uniqueVert[STLfileIndex]);
-		}
-
-		//std::cout << "Mesh created \n";
-
-		Blueprint::CalculateSurfaceNormals(vert, indicies);
-
-		return MainScene.CreateBlueprint(vert, indicies);
-	}
-	catch (std::exception& e) {
-		std::cout << e.what() << std::endl;
-	}
-
-	return nullptr;
-}
-
-Blueprint* Engine3D::CreatePrism(const std::vector<AVertex>& vertices, int VertexNumber, float height) {
-
-	std::vector<GLuint> indicies;
-
-	std::vector<AVertex> V = vertices;
-	V.reserve(VertexNumber * 2);
-
-	if ((int)vertices.size() < 3) { std::cout << "Mesh does not contain any triangles \n"; return nullptr; };
-
-	// 0 -> 1 -> 2
-	// |  / |  / |
-	// | /  | /  |
-	// 3 -> 4 -> 5
-
-	for (int i = 0; i < VertexNumber; i++) {
-		AVertex vclone = vertices[i];
-		vclone.POS.y += height;
-		V.push_back(vclone); // create bottom vertex
-	}
-	for (int i = 0; i < VertexNumber-1; i++) {
-		//LATERAL FACE 1
-		indicies.push_back(i);
-		indicies.push_back(VertexNumber + i);
-		indicies.push_back(i + 1);
-		//LATERAL FACE 2
-		indicies.push_back(VertexNumber + i);
-		indicies.push_back(VertexNumber + i + 1);
-		indicies.push_back(i + 1);
-	}
-
-	//LATERAL FACE 1
-	indicies.push_back(VertexNumber - 1);
-	indicies.push_back(2 * VertexNumber - 1);
-	indicies.push_back(0);
-	//LATERAL FACE 2
-	indicies.push_back(VertexNumber);
-	indicies.push_back(0);
-	indicies.push_back(2 * VertexNumber - 1);
-
-	for (int i = 1; i < VertexNumber-1; i++) {
-		//BOTTOM FACE
-		indicies.push_back(0);
-		indicies.push_back(i + 1);
-		indicies.push_back(i);
-		
-		//TOP FACE
-		indicies.push_back(VertexNumber);
-		indicies.push_back(VertexNumber + i + 1);
-		indicies.push_back(VertexNumber + i);
-	}
-
-	return MainScene.CreateBlueprint(V, indicies);
-}
-
-Blueprint* Engine3D::CreateRectPrism(float length, float width, float height) {
-	std::vector<AVertex> v;
-	v.resize(4);
-	v[0] = AVertex( -length / 2.0f, -height / 2.0f, -width / 2.0f, 200, 200, 200, 255);
-	v[1] = AVertex( length / 2.0f, -height / 2.0f, -width / 2.0f, 200, 200, 200, 255);
-	v[2] = AVertex( length / 2.0f, -height / 2.0f, width / 2.0f, 200, 200, 200, 255);
-	v[3] = AVertex( -length / 2.0f, -height / 2.0f, width / 2.0f, 200, 200, 200, 255);
-	return CreatePrism(v, 4, height);
-}
-
-Blueprint* Engine3D::CreateCube(float length) {
-	return CreateRectPrism(length, length, length);
 }

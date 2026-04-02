@@ -5,11 +5,11 @@
 #include "VBO.h"
 
 class VAO {
+private:
+	bool SetupComplete = false;
+	GLuint ID;
 public:
 
-	bool SetupComplete = false;
-
-	GLuint ID;
 	VAO() { std::cout << "C -> VAO \n"; };
 
 	void Setup();
@@ -17,4 +17,6 @@ public:
 	void Bind();
 	void Unbind();
 	void Delete();
+
+	inline bool GetCompleteStatus() { return SetupComplete; }
 };

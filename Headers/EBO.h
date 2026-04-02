@@ -3,12 +3,12 @@
 #include "precompile.h"
 
 class EBO {
-public:
-
+private:
 	bool SetupComplete = false;
-
 	GLuint ID;
 	size_t Capacity = 0;
+public:
+
 	EBO() { std::cout << "C -> EBO \n"; };
 
 	void Setup(std::vector<GLuint>& VertIndicies, GLsizeiptr size, const int drawStyle);
@@ -16,4 +16,6 @@ public:
 	void Bind();
 	void Unbind();
 	void Delete();
+
+	inline bool GetCompleteStatus() { return SetupComplete; }
 };

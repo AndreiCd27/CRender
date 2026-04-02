@@ -25,8 +25,6 @@ public:
 template <typename T>
 class ArrayOrganizer {
 
-	int contor = 0;
-
 	std::unordered_map<int, int> ID_TO_INDEX;
 
 	std::vector<int> INDEX_TO_ID;
@@ -67,7 +65,7 @@ class ArrayOrganizer {
 		std::fill(Array.begin() + h.offset + capacityOld, Array.begin() + h.offset + h.capacity, T());
 
 	}
-	/*
+	/* DEPRECATED
 	void ReservePow2(int HandleIndex, int pow) {
 		Handle& h = Handles[HandleIndex];
 		int capacityOld = h.capacity;
@@ -114,7 +112,7 @@ public:
 	//void MoveAfter(int afterHandleID, int HandleID) {
 		//TODO
 	//}
-	/*
+	/* DEPRECATED
 	void MoveToEnd(int HandleID) {
 
 		int HandleIndex = ID_TO_INDEX[HandleID]; // (OLD INDEX)

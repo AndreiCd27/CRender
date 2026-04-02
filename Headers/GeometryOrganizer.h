@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stl_reader.h" // .stl geometry file reader by sreiter https://github.com/sreiter/stl_reader
+
 #include "GeomInstance.h"
 
 class Scene;
@@ -35,6 +37,7 @@ private:
 
 	// Sample Buffer to use when selecting instances (store their index)
 	// Updates every frame
+	// Right now not used
 	std::vector<int> VisibleInstances;
 
 public:
@@ -76,6 +79,12 @@ public:
 	void GenerateHandle(int HandleID, int TARGET, int capacity);
 
 	void DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, int depth, int maxdepth, bool details);
+
+	Blueprint* LoadSTLGeomFile(const char* filePath, float scale);
+
+	Blueprint* CreatePrism(const std::vector<AVertex>& vertices, int VertexNumber, float height);
+	Blueprint* CreateRectPrism(float length, float width, float height);
+	Blueprint* CreateCube(float length);
 };
 
 class Tile {
@@ -94,12 +103,15 @@ private:
 
 	std::vector<int> RelatedHandleIDs;
 
-public:
-	static const int shiftComponent;
-
 	Tile(Tile* _Parent, uint16_t _TileX, uint16_t _TileZ, uint16_t _Level);
 	~Tile();
 	void DivideTile(uint16_t i, uint16_t j);
+
+	friend Scene::Scene();
+	friend Scene::~Scene();
+
+public:
+	static const int shiftComponent;
 
 	std::vector<Tile*> RecurseInTiles();
 	void RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs);
