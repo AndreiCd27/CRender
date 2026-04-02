@@ -23,19 +23,22 @@ void Camera::Matrix(float FOVdeg, float near, float far, float aspect, Shader& s
 
 	glm::mat4 perspMatrix = mat4Tuple.proj * mat4Tuple.view;
 
-	shader.SetUniformVector3("CamPosition", AVector3(Position.x, Position.y, Position.z));
+	shader.SetUniformVector3("CamPosition", Position);
 	shader.SetUniformMatrix4by4("perspectiveMatrix", perspMatrix);
 }
 
-void Camera::LightMatrix(float shadowMapScale, Shader& shader, bool TextureBias) {
+void Camera::LightMatrix(float shadowMapScale, Shader& shader, bool TextureBias, AVector3 lookAtFrom) {
 
 	//Light matrix uniformID is already inside SunCamera (see class Engine3D)
 
-	glm::vec3 lightPos = glm::vec3(this->Position.x, this->Position.y, this->Position.z);
+	glm::vec3 lightDir = (glm::vec3)Position.Normalize();
+
+	float distance = 128.0f; // Distance from UserCamera to SunCamera
 
 	//////////////////////////////////////////////////////////////////////////////// CHECK THIS
 	mat4Tuple.proj = glm::ortho(-shadowMapScale, shadowMapScale, -shadowMapScale, shadowMapScale, -1000.0f, 1000.0f);
-	mat4Tuple.view = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	mat4Tuple.view = glm::lookAt((glm::vec3)lookAtFrom + lightDir * distance, 
+		(glm::vec3)lookAtFrom, glm::vec3(0.0f, 1.0f, 0.0f));
 
 	glm::mat4 depthMatrix = mat4Tuple.proj * mat4Tuple.view;
 

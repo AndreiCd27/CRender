@@ -60,7 +60,7 @@ public:
 	Tile* FindTileForPosition(const AVertex& center, AVector3 Position);
 
 	Blueprint* CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GLuint>& indicies);
-	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, AVector3 pos, const std::string& name);
+	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, const std::string& name);
 
 	ArrayOrganizer<InstanceData>& GetInstanceOrganizer();
 	ArrayOrganizer<AVertex>& GetVBO_Organizer();

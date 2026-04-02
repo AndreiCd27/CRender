@@ -55,6 +55,7 @@ private:
 	// Shader
 	Shader shaderProgram;
 	Shader instanceProgram;
+	Shader shadowProgram;
 	VAO VAO_1;
 	VBO VBO_1;
 	EBO EBO_1;
@@ -84,9 +85,7 @@ private:
 	Engine3D(const Engine3D&) = delete;
 	Engine3D& operator=(const Engine3D&) = delete;
 
-	void shadowPassStaticShader();
 	void shadowPassInstanceShader();
-	void renderPassStaticShader();
 	void renderPassInstanceShader();
 
 public:
@@ -109,10 +108,11 @@ public:
 
 	void setupShaders();
 
-	void setupGeometryArrayObjects(const int drawStyle);
+	void setupGeometryArrayObjects(const char* style);
 
 	void setupInstanceVBO();
-	//void DrawInstances(Blueprint* BLUEPRINT, const Tile* TILE);
+	
+	void SetupFull(const char* style);
 
 	inline void setBackground(float R, float G, float B, float A) { backgroundColor = { R,G,B,A }; };
 
@@ -131,11 +131,13 @@ public:
 
 	void initGameFrame();
 
-	void shadowPass(bool STATIC_SHADER);
+	void shadowPass();
 
-	void renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float zFar);
+	void renderPass(float FOVdeg, float zNear, float zFar);
 
 	void DrawAllInstances();
+
+	void RenderInstances(int timeOfDay);
 	
 	void DEBUG_showCameraVectors();
 	void DEBUG_ArrayOrganizers();

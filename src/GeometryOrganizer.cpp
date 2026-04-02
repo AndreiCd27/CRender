@@ -216,13 +216,12 @@ Tile* Scene::FindTileForPosition(const AVertex& center, AVector3 Position) {
 	return tile;
 }
 
-std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, AVector3 pos, const std::string& name) {
+std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, const std::string& name) {
 	std::shared_ptr<Instance> newInst = std::make_shared<Instance>(temp, this, name);
-	newInst->SetPosition(pos);
 	AVertex& center = temp->Center;
 	newInst->SetColor(center.RGBA);
 
-	Tile* targetTile = this->FindTileForPosition(temp->Center, pos);
+	Tile* targetTile = this->FindTileForPosition(temp->Center,AVector3(0,0,0));
 
 	newInst->SetTile(targetTile);
 
@@ -237,7 +236,7 @@ std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, AVector3 pos, c
 	}
 
 	InstanceOrganizer.Push( HandleID, 
-		InstanceData(pos, AVector3(0.0f, 0.0f, 0.0f), AVector3(1.0f, 1.0f, 1.0f)) );
+		InstanceData(AVector3(0.0f, 0.0f, 0.0f), AVector3(0.0f, 0.0f, 0.0f), AVector3(1.0f, 1.0f, 1.0f)) );
 
 	newInst->SetHandleOffset( insArrayOrg.GetHandleData(HandleID).size - 1 );
 
@@ -416,15 +415,15 @@ Blueprint* Scene::CreatePrism(const std::vector<AVertex>& vertices, int VertexNu
 	indicies.push_back(2 * VertexNumber - 1);
 	indicies.push_back(0);
 	//LATERAL FACE 2
+	indicies.push_back(2 * VertexNumber - 1);
 	indicies.push_back(VertexNumber);
 	indicies.push_back(0);
-	indicies.push_back(2 * VertexNumber - 1);
 
 	for (int i = 1; i < VertexNumber - 1; i++) {
 		//BOTTOM FACE
 		indicies.push_back(0);
-		indicies.push_back(i + 1);
 		indicies.push_back(i);
+		indicies.push_back(i + 1);
 
 		//TOP FACE
 		indicies.push_back(VertexNumber);

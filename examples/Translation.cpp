@@ -38,7 +38,7 @@ int main() {
 	if (humanMesh) {
 		std::cout << "Created: Human \n";
 		for (int i = 0; i < 4; i++) {
-			auto human = Scene->CreateInstance(humanMesh, 
+			auto human = Scene->CreateInstance(humanMesh, AVector3(),
 				"Human " + std::to_string(i) //TAG NAME
 			);
 			human->SetPosition(AVector3(0.0f + i * 40.0f, 2.0f, -25.0f));
@@ -55,7 +55,9 @@ int main() {
 	std::shared_ptr<Instance> first = nullptr;
 	std::shared_ptr<Instance> prevI = nullptr;
 	for (int i = 0; i < 10; i++) {
-		auto I = Scene->CreateInstance(cubeB, "Cube " + std::to_string(i));
+		auto I = Scene->CreateInstance(cubeB, AVector3(),
+			"Cube " + std::to_string(i)
+		);
 		if (prevI) {
 			I->SetParent(prevI);
 		}
@@ -67,7 +69,7 @@ int main() {
 		prevI = I;
 	}
 
-	auto plane = Scene->CreateInstance(cubeB, "Plane");
+	auto plane = Scene->CreateInstance(cubeB, AVector3(), "Plane");
 	plane->SetPosition(AVector3(0.0f, -5.0f, 0.0f));
 	plane->SetSize(AVector3(20.0f, 1.0f, 20.0f));
 	plane->SetColor(AColor3(50, 255, 25, 255));
@@ -75,7 +77,7 @@ int main() {
 	std::vector<AVertex> Verticies = { AVertex(-4.8f, 0.0f, -4.0f), AVertex(3.5f, 0.0f, -3.75f), AVertex(1.6f, 0.0f, 4.15f), AVertex(-2.65f, 0.0f, 2.75f) };
 	Blueprint* prismB = Scene->CreatePrism(Verticies, 4, 10.0f);
 
-	auto triPrism = Scene->CreateInstance(prismB, "TriPrism");
+	auto triPrism = Scene->CreateInstance(prismB, AVector3(), "TriPrism");
 	triPrism->SetColor(255, 255, 0, 255);
 	triPrism->SetPosition(AVector3(-30.0f, -5.0f, -25.0f));
 	triPrism->SetSize(AVector3(5.0f, 5.0f, 5.0f));
@@ -86,17 +88,17 @@ int main() {
 
 	std::cout << "Meshes constructed \n";
 
-	engine->setCamera(0.0f, 40.0f, 120.0f);
+	engine->setCamera(0.0f, 40.0f, 120.0f); //Set camera to this position
 	engine->setSunCamera(0.0f, 100.0f, 1.0f);
 
 	engine->setupShaders(); //Uses Camera Class and Mesh Instances
 
-	engine->setupGeometryArrayObjects("static");
+	engine->setupGeometryArrayObjects(engine->getDrawStyle("static"));
 	engine->setupInstanceVBO();
 
 	std::cout << "Shaders created\n";
 
-	float _deltaTimeForTIMER = 1.0f / 60.0f;
+	float _deltaTimeForTIMER = 1.0f / 10.0f;
 	double prevTime = glfwGetTime();
 
 	int ROT = 0;
@@ -123,6 +125,24 @@ int main() {
 			engine->setWindowTitle(winTitle);
 			PREV_TIME = CURRENT_TIME;
 			frameCounter = 0;
+
+			float dt = (float)(cntt * 2 % 100);
+			plane->SetPosition(AVector3(dt, -5.0f, 0.0f));
+			plane->SetSize(AVector3(25.0f + dt / 5.0f, 0.5f, 25.0f - dt / 5.0f));
+			first->SetPosition(AVector3(dt / 2.0f, 5.0f, 0.0f));
+
+			std::string tag = "Human 3";
+			auto workspace_sptr = workspace.lock();
+			auto child = workspace_sptr->FirstChild(tag); // Finds first Child with Tag "Human 3"
+
+			if (child) child->SetRotation(AVector3(-90.0f + dt, 0.0f, 0.0f));
+			else std::cout << "Not found: the human 0! \n";
+
+			cntt++;
+		}
+		if (cntt > 200) {
+			// Test out dynamic deletions
+			plane->Destroy();
 		}
 
 		engine->initGameFrame(); // setting up the background color
@@ -136,34 +156,17 @@ int main() {
 			// Sky colors
 			float sinROT = sin((double)ROT / 1024.0f);
 			float cosROT = cos((double)ROT / 1024.0f);
-			engine->getCamera(true).Position = AVector3(10.0f * cosROT, 200.0f * sinROT, 100.0f);
-			ROT += 2;
-
-			bool translations = false;
-
-			if (translations) {
-				float dt = (float)(cntt / 10 % 100);
-				plane->SetPosition(AVector3(dt, -5.0f, 0.0f));
-				plane->SetSize(AVector3(25.0f + dt / 5.0f, 0.5f, 25.0f - dt / 5.0f));
-				first->SetPosition(AVector3(dt / 2.0f, 5.0f, 0.0f));
-
-				std::string tag = "Human 3";
-				auto workspace_sptr = workspace.lock();
-				auto child = workspace_sptr->FirstChild(tag); // Finds first Child with Tag "Human 3"
-
-				if (child) child->SetRotation(AVector3(-90.0f + dt, 0.0f, 0.0f));
-				else std::cout << "Not found: the human 0! \n";
-			}
-
-			cntt++;
-		}
-		if (cntt > 20000) {
-			// Test out dynamic deletions
-			plane->Destroy();
+			engine->getCamera(true).Position = AVector3(100.0f * cosROT, 100.0f * sinROT, 50.0f);
+			float lightReflactance = std::max(0.0f, sinf((float)ROT / 512.0f));
+			float sunsetCoef = std::abs(cos((double)ROT / 512.0f) * 1.5f);
+			engine->setBackground((sunsetCoef) * 0.25f * (lightReflactance + 0.25f),
+				(lightReflactance + sunsetCoef / 2.0f) * 0.5f * (lightReflactance),
+				lightReflactance, 1.0f);
+			ROT += 4;
 		}
 
-		engine->shadowPass();
-		engine->renderPass(45.0f, 0.1f, 1000.0f);
+		engine->shadowPass(false);
+		engine->renderPass(false, 45.0f, 0.1f, 1000.0f);
 	}
 
 	std::cout << " \n\n | -------- CLEANING PROCESS STARTED --------------- | \n\n";

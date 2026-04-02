@@ -107,12 +107,16 @@ void Engine3D::setupShaders() {
 
 	instanceProgram.Setup("Shaders/instance.vert", "Shaders/instance.frag");
 
+	shadowProgram.Setup("Shaders/shadow.vert", "Shaders/shadow.frag");
+
 	glEnable(GL_DEPTH_TEST);
 
 }
 
-void Engine3D::setupGeometryArrayObjects(const int drawStyle = GL_STATIC_DRAW) {
+void Engine3D::setupGeometryArrayObjects(const char* style) {
 	
+	const int drawStyle = getDrawStyle(style);
+
 	VAO_1.Setup();
 
 	VAO_1.Bind();
@@ -142,7 +146,7 @@ void Engine3D::setupGeometryArrayObjects(const int drawStyle = GL_STATIC_DRAW) {
 	std::cout << "VBO linking complete \n";
 
 	depthTextureObject.setupFBO();
-	depthTextureObject.setupDepthTexture(2048);
+	depthTextureObject.setupDepthTexture(4096);
 
 	//std::cout << "Setup FBO complete \n";
 
@@ -185,6 +189,23 @@ void Engine3D::setupInstanceVBO() {
 
 	InstanceVBOSetupComplete = true;
 
+}
+
+void Engine3D::SetupFull(const char* drawStyle) {
+	engine->setCamera(0.0f, 40.0f, 120.0f); // Default Player Camera Position
+	engine->setSunCamera(200.0f, 200.0f, 200.0f); // Default Sun Camera Position
+
+	// Configure shaders
+	engine->setupShaders();
+
+	// Configure OpenGL essentials:
+	// 1) VAO (Vertex Array Object) - here we store "layouts"; we bind with VBO, EBO, instanceVBO
+	// 2) VBO (Vertex Buffer Object) - here we store Blueprint vertices and send them to OpenGL
+	// 3) EBO (Entity Buffer Object) - here we store vertex indicies, such that OpenGL knows
+	// how to connect each vertex, having the result of drawing a sequence of triangles in 3D space
+	// 4) instanceVBO - here we store translation matricies (4x4)
+	engine->setupGeometryArrayObjects(drawStyle);
+	engine->setupInstanceVBO();
 }
 /* TO FIX
 void Engine3D::DrawInstances(Blueprint* BLUEPRINT, const Tile* TILE) {
@@ -267,71 +288,24 @@ void Engine3D::DrawAllInstances() {
 	}
 }
 
-void Engine3D::shadowPassStaticShader() {
-	shaderProgram.Activate();
-	VAO_1.Bind();
-
-	shaderProgram.SetUniformVector3("CamPosition", AVector3(0.0f, 0.0f, 0.0f));
-
-	SunCamera.LightMatrix(500.0f, shaderProgram, false);
-
-	// The Sun is looking from it's Position to the center (0,0,0);
-	shaderProgram.SetUniformVector3("lightDirection", 
-		AVector3(SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z)
-	);
-
-	int indiciesSize = (int)(getScene()->GetEBO_Organizer().GetMultiArray().size());
-	glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
-
-}
-
 void Engine3D::shadowPassInstanceShader() {
-	instanceProgram.Activate();
+	shadowProgram.Activate();
 	VAO_1.Bind();
 
 	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
 
-	instanceProgram.SetUniformVector3("CamPosition", AVector3(0.0f, 0.0f, 0.0f));
-
-	SunCamera.LightMatrix(500.0f, instanceProgram, false);
-
-	// The Sun is looking from it's Position to the center (0,0,0);
-	instanceProgram.SetUniformVector3("lightDirection",
-		AVector3(SunCamera.Position.x, SunCamera.Position.y, SunCamera.Position.z)
-	);
+	// The sun looks from the UserCamera's position, so the shadowsMap doesn't stay forever at (0,0,0)
+	SunCamera.LightMatrix(500.0f, shadowProgram, false, UserCamera.Position);
 
 	DrawAllInstances();
 }
 
-void Engine3D::renderPassStaticShader() {
-
-	shaderProgram.Activate();
-	VAO_1.Bind();
-
-	SunCamera.LightMatrix(500.0f, shaderProgram, true);
-
-	glUniform1i(shaderProgram.GetUniformLocation("shadowMap"), 0);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
-
-	int indiciesSize = (int)(getScene()->GetEBO_Organizer().GetMultiArray().size());
-	glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
-
-}
 
 void Engine3D::renderPassInstanceShader() {
 	// START TO DRAW INSTANCES
 
-	instanceProgram.Activate();
-	VAO_1.Bind();
-
-	SunCamera.LightMatrix(500.0f, instanceProgram, true);
-
-	glUniform1i(instanceProgram.GetUniformLocation("shadowMap"), 0);
-
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
 
@@ -342,25 +316,32 @@ void Engine3D::renderPassInstanceShader() {
 	DrawAllInstances();
 }
 
-void Engine3D::shadowPass(bool STATIC_SHADER) {
+void Engine3D::shadowPass() {
 	glBindFramebuffer(GL_FRAMEBUFFER, depthTextureObject.FBO_ID);
-	glViewport(0, 0, 2048, 2048);
+	glViewport(0, 0, 4096, 4096);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	
-	STATIC_SHADER ? shadowPassStaticShader() : shadowPassInstanceShader();
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
+	shadowPassInstanceShader();
 	
 }
 
-void Engine3D::renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float zFar) {
+void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
+	
+	instanceProgram.Activate();
+	VAO_1.Bind();
 
 	this->registerCameraInput(FOVdeg, zNear, zFar);
+	instanceProgram.SetUniformVector3("lightDirection", SunCamera.Position);
+	// The sun looks from the UserCamera's position, so the shadowsMap doesn't stay forever at (0,0,0)
+	SunCamera.LightMatrix(500.0f, instanceProgram, true, UserCamera.Position);
 
+	glUniform1i(instanceProgram.GetUniformLocation("shadowMap"), 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
 	glViewport(0, 0, window.getWidth(), window.getHeight());
 	//Clear the BACK BUFFER and assign our color to it
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -368,13 +349,25 @@ void Engine3D::renderPass(bool STATIC_SHADER, float FOVdeg, float zNear, float z
 	glCullFace(GL_BACK);
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	glDepthMask(GL_TRUE);
 	
-	STATIC_SHADER ? renderPassStaticShader() : renderPassInstanceShader();
+	renderPassInstanceShader();
 
 	//Swap BACK BUFFER with FRONT BUFFER
 	glfwSwapBuffers(window.getWindow());
 	// Get events (for controls, event handling, closing, etc.)
 	glfwPollEvents();
+}
+
+void Engine3D::RenderInstances(int timeOfDay) {
+	double ROT = (timeOfDay - 12) / 12.0f * glm::pi<double>();
+	float sinROT = sin(ROT);
+	float cosROT = cos(ROT);
+	SunCamera.Position = AVector3(100.0f * cosROT, 100.0f * sinROT, 50.0f);
+	initGameFrame();
+	shadowPass();
+	renderPass(45.0f, 0.1f, 1000.0f);
 }
 
 Tile* Engine3D::getVisibleCameraFrustum() {
