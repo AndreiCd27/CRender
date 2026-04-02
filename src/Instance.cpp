@@ -1,23 +1,13 @@
 
-#include "GeomInstance.h"
-
-
-int Instance::C_INS = 0;
-int Instance::D_INS = 0;
-
-void Instance::DEBUG_print_CDcount() {
-	std::cout << C_INS << " " << D_INS << "\n";
-}
+#include "Instance.h"
 
 Instance::Instance(Blueprint* Template, Scene* scene) : Transform(scene, "Instance") {
-	C_INS++;
 	this->Template = Template;
 
 	EID_UMap[GetEID()] = shared_from_this();
 	Instance_UMap[GetTag()].push_back(GetEID());
 }
 Instance::Instance(Blueprint* Template, Scene* scene, const std::string& TagName) : Transform(scene, TagName) {
-	C_INS++;
 	this->Template = Template;
 }
 

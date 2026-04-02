@@ -1,7 +1,7 @@
 #pragma once
 
 #include "shaderClass.h"
-#include "GeometryOrganizer.h"
+#include "Tile.h"
 #include "VBO.h"
 #include "EBO.h"
 #include "VAO.h"
@@ -89,6 +89,8 @@ private:
 	void renderPassInstanceShader();
 
 public:
+
+	bool DEBUG = false;
 
 	static Engine3D* GetEngine3D();
 	static void EngineTerminate();

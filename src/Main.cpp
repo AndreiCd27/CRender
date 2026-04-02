@@ -52,7 +52,7 @@ int main() {
 
 	Blueprint* cubeB = Scene->CreateCube(10.0f);
 
-	std::shared_ptr<Instance> first = nullptr;
+	std::shared_ptr<Instance> firstcube = nullptr;
 	std::shared_ptr<Instance> prevI = nullptr;
 	for (int i = 0; i < 10; i++) {
 		auto I = Scene->CreateInstance(cubeB, "Cube " + std::to_string(i));
@@ -60,7 +60,7 @@ int main() {
 			I->SetParent(prevI);
 		}
 		else {
-			first = I;
+			firstcube = I;
 		}
 		I->SetColor(0, i * 15, 255, 255);
 		I->SetPosition(AVector3(10.0f * i, 5.0f, 10.0f * i));
@@ -82,6 +82,32 @@ int main() {
 
 	triPrism->SetParent(plane);
 
+	//Print blueprints
+	int i = 0;
+	for (auto& blueprint : Scene->GetBlueprints()) {
+		std::cout << "Blueprint " << i << " has ID " << blueprint->GetID() << "\n";
+		i++;
+	}
+	// GetParent method
+	auto parent = triPrism->GetParent();
+	if (&*parent == &*plane) {
+		std::cout << "These objects are the same \n";
+	}
+	// AllChildrenWith method
+	if (workspace.lock()) {
+		auto cube1 = Scene->CreateInstance(cubeB, "Cube 1");
+		cube1->SetParent(firstcube);
+		const std::string s = "Cube 1";
+		const std::vector<std::shared_ptr<Instance>>& vectinst = firstcube->AllChildrenWith(s);
+		std::cout << "Instances with name " << s << ": " << vectinst.size() <<"\n";
+
+		// GetAVector3s
+		AVector3 pos = cube1->GetPosition();
+		AVector3 rot = cube1->GetRotation();
+		AVector3 size = cube1->GetSize();
+		cube1->SetSize(size * 2.0f);
+
+	}
 	////////////////////////////////////////////////////////////////////////////////
 
 	std::cout << "Meshes constructed \n";
@@ -145,7 +171,7 @@ int main() {
 				float dt = (float)(cntt / 10 % 100);
 				plane->SetPosition(AVector3(dt, -5.0f, 0.0f));
 				plane->SetSize(AVector3(25.0f + dt / 5.0f, 0.5f, 25.0f - dt / 5.0f));
-				first->SetPosition(AVector3(dt / 2.0f, 5.0f, 0.0f));
+				firstcube->SetPosition(AVector3(dt / 2.0f, 5.0f, 0.0f));
 
 				std::string tag = "Human 3";
 				auto workspace_sptr = workspace.lock();

@@ -22,9 +22,6 @@ public:
 
 class Instance : public Transform, public std::enable_shared_from_this<Instance> {
 
-	static int C_INS;
-	static int D_INS;
-
 	Blueprint* Template = nullptr; // Blueprint object
 	//Add more stuff, like materials and textures
 	Tile* tile = nullptr; // Tile it belongs in, calculated through Position
@@ -122,10 +119,6 @@ public:
 	// (See MultiArray.h & InstanceArrayOrganizer in Scene class)
 
 	void SetHandleOffset(int offset);
-
-	// ------------ DEBUG
-
-	static void DEBUG_print_CDcount();
 
 	// ------------- FRIENDS (FROM SCENE CLASS)
 

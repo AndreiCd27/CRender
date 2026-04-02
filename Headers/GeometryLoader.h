@@ -4,14 +4,6 @@
 #include "precompile.h"
 
 #include "GeometryBasics.h"
-#include "MultiArray.h"
-#include "Camera.h"
-#include "VBO.h"
-#include "EBO.h"
-
-#define TILE_MAXSCALE_FACTOR 14
-#define MAX_TILE_LEVEL 14
-#define START_TILE_LEVEL 10
 
 class Blueprint;
 class Tile;

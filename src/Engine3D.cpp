@@ -121,16 +121,16 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 
 	VAO_1.Bind();
 
-	std::cout << "Got vertex and indicies buffers \n";
+	if (DEBUG)std::cout << "Got vertex and indicies buffers \n";
 
 	std::vector<AVertex>& vert = MainScene.GetVBO_Organizer().GetMultiArray();
 	std::vector<GLuint>& indicies = MainScene.GetEBO_Organizer().GetMultiArray();
 	VBO_1.Setup(vert.data(), vert.size() * sizeof(AVertex), drawStyle);
 	EBO_1.Setup(indicies.data(), indicies.size() * sizeof(GLuint), drawStyle);
 
-	std::cout << "Total VBO elements: " << vert.size() << "\n";
+	if (DEBUG)std::cout << "Total VBO elements: " << vert.size() << "\n";
 
-	std::cout << "VBO & EBO setup complete \n";
+	if (DEBUG)std::cout << "VBO & EBO setup complete \n";
 
 	GLsizei stride = sizeof(AVertex); //32 bytes
 	
@@ -143,18 +143,18 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 	// UV ( uint32 = short + short )
 	VAO_1.LinkVBO(VBO_1, 3, 2, GL_UNSIGNED_SHORT, stride, GL_TRUE, (void*)28);
 
-	std::cout << "VBO linking complete \n";
+	if (DEBUG)std::cout << "VBO linking complete \n";
 
 	depthTextureObject.setupFBO();
 	depthTextureObject.setupDepthTexture(4096);
 
-	//std::cout << "Setup FBO complete \n";
+	if (DEBUG)std::cout << "Setup FBO complete \n";
 
 	VAO_1.Unbind();
 	VBO_1.Unbind();
 	EBO_1.Unbind();
 
-	//std::cout << "Unbinding..\n";
+	if (DEBUG)std::cout << "Unbinding..\n";
 }
 
 void Engine3D::setupInstanceVBO() {

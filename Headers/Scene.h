@@ -1,15 +1,19 @@
-#pragma once
+
+#include "Instance.h"
+#include "MultiArray.h"
 
 #include "stl_reader.h" // .stl geometry file reader by sreiter https://github.com/sreiter/stl_reader
 
-#include "GeomInstance.h"
 
-class Scene;
-class Tile;
+#define TILE_MAXSCALE_FACTOR 14
+#define MAX_TILE_LEVEL 14
+#define START_TILE_LEVEL 10
 
 #define INSTANCE_ORGANIZER_TARGET 0
 #define VBO_ORGANIZER_TARGET 1
 #define EBO_ORGANIZER_TARGET 2
+
+class Tile;
 
 class SceneException : public std::runtime_error {
 public:
@@ -69,9 +73,9 @@ public:
 	std::vector<Blueprint*>& GetBlueprints();
 
 	const InstanceData* GetInstanceOrganizerPTR(int HandleID);
-	const AVertex * GetVBO_OrganizerPTR(int HandleID);
-	const GLuint * GetEBO_OrganizerPTR(int HandleID);
-	
+	const AVertex* GetVBO_OrganizerPTR(int HandleID);
+	const GLuint* GetEBO_OrganizerPTR(int HandleID);
+
 	Handle GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET);
 
 	std::weak_ptr<const Instance> GetWorkspace();
@@ -85,41 +89,4 @@ public:
 	Blueprint* CreatePrism(const std::vector<AVertex>& vertices, int VertexNumber, float height);
 	Blueprint* CreateRectPrism(float length, float width, float height);
 	Blueprint* CreateCube(float length);
-};
-
-class Tile {
-private:
-	static int contor;
-
-	static bool DEBUG;
-
-	int TileID;
-
-	Tile* Parent;
-	uint16_t TileX, TileZ;
-	uint16_t Level = 0;
-
-	Tile* Divisions[2][2] = { {nullptr} };
-
-	std::vector<int> RelatedHandleIDs;
-
-	Tile(Tile* _Parent, uint16_t _TileX, uint16_t _TileZ, uint16_t _Level);
-	~Tile();
-	void DivideTile(uint16_t i, uint16_t j);
-
-	friend Scene::Scene();
-	friend Scene::~Scene();
-
-public:
-	static const int shiftComponent;
-
-	std::vector<Tile*> RecurseInTiles();
-	void RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs);
-
-	int GetTileID() const;
-
-	const std::vector<int>& GetRelatedHandleIDs();
-	void PushHandleID(int HandleID, ArrayOrganizer<InstanceData>& insArrayOrg);
-
-	friend Tile* Scene::FindTileForPosition(const AVertex& center, AVector3 Position);
 };

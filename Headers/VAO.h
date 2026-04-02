@@ -10,7 +10,9 @@ private:
 	GLuint ID;
 public:
 
-	VAO() { std::cout << "C -> VAO \n"; };
+	VAO() { 
+		//std::cout << "C -> VAO \n"; 
+	};
 
 	void Setup();
 	void LinkVBO(VBO& VBO, GLuint layout, GLuint numComp, GLenum type, GLsizei stride, bool NORMALIZED, void* offset);

@@ -11,7 +11,9 @@ private:
 	size_t Capacity = 0;
 public:
 
-	VBO() { std::cout << "C -> VBO \n"; };
+	VBO() { 
+		//std::cout << "C -> VBO \n"; 
+	};
 
 	void Setup(std::vector<AVertex>& worldVertices, GLsizeiptr size, const int drawStyle);
 	void Setup(const AVertex* PTR, GLsizeiptr size, const int drawStyle);
