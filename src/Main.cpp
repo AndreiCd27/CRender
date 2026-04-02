@@ -106,7 +106,8 @@ int main() {
 		AVector3 rot = cube1->GetRotation();
 		AVector3 size = cube1->GetSize();
 		cube1->SetSize(size * 2.0f);
-
+		cube1->SetPosition(pos + AVector3(0.0f, 20.0f, -15.0f));
+		cube1->SetRotation(rot + AVector3(0.0f, 45.0f, 0.0f));
 	}
 	////////////////////////////////////////////////////////////////////////////////
 
