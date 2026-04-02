@@ -26,13 +26,13 @@ public:
 		return glfwWindowShouldClose(window);
 	}
 
-	inline const float getAspectRatio() const {
+	inline float getAspectRatio() {
 		return aspectRatio;
 	}
-	inline const int getHeight() const {
+	inline int getHeight() {
 		return height;
 	}
-	inline const int getWidth() const {
+	inline int getWidth() {
 		return width;
 	}
 };
