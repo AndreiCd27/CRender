@@ -62,6 +62,7 @@ Headers/Scene.h Headers/Tile.h Headers/GeometryLoader.h
     Headers/VBO.h Headers/EBO.h Headers/VAO.h 
     Headers/shaderClass.h
     Headers/Instance.h
+    Headers/Window.h
 )
 add_executable(${PROJECT_NAME} src/Main.cpp 
     src/Engine3D.cpp src/Camera.cpp 
@@ -71,6 +72,7 @@ add_executable(${PROJECT_NAME} src/Main.cpp
     src/VBO.cpp src/EBO.cpp src/VAO.cpp 
     src/shaderClass.cpp
     src/Instance.cpp
+    src/Window.cpp
     ${HEADER_FILES}
 )
 

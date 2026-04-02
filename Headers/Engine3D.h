@@ -7,37 +7,9 @@
 #include "VAO.h"
 #include "Camera.h"
 #include "Texture.h"
+#include "Window.h"
 
-class Window {
-	// GLFW window object
-	GLFWwindow* window = nullptr;
-	int height = 0;
-	int width = 0;
-	float aspectRatio = 0.0f;
-public:
-
-	bool CreateWindow(int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_TITLE);
-
-	void Terminate();
-
-	GLFWwindow* getWindow() { return window; }
-
-	inline int windowShouldClose() {
-		return glfwWindowShouldClose(window);
-	}
-
-	inline float getAspectRatio() {
-		return aspectRatio;
-	}
-	inline int getHeight() {
-		return height;
-	}
-	inline int getWidth() {
-		return width;
-	}
-};
-
-//bool _Engine3D_Started = false;
+#define voidcast(x) reinterpret_cast<void*>(x)
 
 // SINGLETON ENGINE3D
 class Engine3D {
@@ -123,7 +95,8 @@ public:
 
 	Scene* getScene();
 
-	Tile* getVisibleCameraFrustum();
+	//FUNCTION MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
+	//Tile* getVisibleCameraFrustum();
 
 	inline int windowShouldClose() { 
 		return window.windowShouldClose(); 

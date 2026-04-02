@@ -57,7 +57,7 @@ public:
 	// This is a design choice, beacause one clone of a Scene
 	// With a big memory space (on the heap) may crash the program
 	// Or trigger many heap reallocations
-	// A new Scene may be added from zero
+	// A new Scene may be added from zero, but right now Engine3D only has MainScene
 	Scene(const Scene&) = delete;
 	Scene& operator=(const Scene&) = delete;
 
@@ -71,11 +71,11 @@ public:
 	ArrayOrganizer<GLuint>& GetEBO_Organizer();
 
 	std::vector<Blueprint*>& GetBlueprints();
-
+	/* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 	const InstanceData* GetInstanceOrganizerPTR(int HandleID);
 	const AVertex* GetVBO_OrganizerPTR(int HandleID);
 	const GLuint* GetEBO_OrganizerPTR(int HandleID);
-
+	*/
 	Handle GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET);
 
 	std::weak_ptr<const Instance> GetWorkspace();

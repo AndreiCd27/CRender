@@ -3,39 +3,6 @@
 #include "Engine3D.h"
 #include <cstring>
 
-bool Window::CreateWindow(int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDOW_TITLE) {
-	// INITIALIZE GLFW
-	glfwInit();
-	// SOME SPECIFICATIONS FOR OUR OPENGL VERSION THAT WE SEND TO GLFW
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//CORE profile from OPENGL; only modern functions
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	//Create the WINDOW OBJECT with our defined width and height and title
-	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
-	//Error checking if anything went wrong in the window creating process
-	if (window == nullptr) {
-		std::cout << "Error when creating window \n";
-		return false;
-	}
-	//Tell GLFW we are using our created window as it's context
-	glfwMakeContextCurrent(window);
-
-	width = WINDOW_WIDTH;
-	height = WINDOW_HEIGHT;
-	aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
-
-	return true;
-}
-
-void Window::Terminate() {
-	if (window != nullptr) {
-		glfwDestroyWindow(window);
-		//Terminate GLFW
-		glfwTerminate();
-	}
-}
-
 Engine3D* Engine3D::engine = nullptr;
 
 Engine3D* Engine3D::GetEngine3D() {
@@ -135,13 +102,13 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 	GLsizei stride = sizeof(AVertex); //32 bytes
 	
 	// APosition ( 3 floats)
-	VAO_1.LinkVBO(VBO_1, 0, 3, GL_FLOAT, stride, GL_FALSE, (void*)0);
+	VAO_1.LinkVBO(VBO_1, 0, 3, GL_FLOAT, stride, GL_FALSE, voidcast(0));
 	// RGBA	( uint32 = 4 * byte )
-	VAO_1.LinkVBO(VBO_1, 1, 4, GL_UNSIGNED_BYTE, stride, GL_TRUE, (void*)12);
+	VAO_1.LinkVBO(VBO_1, 1, 4, GL_UNSIGNED_BYTE, stride, GL_TRUE, voidcast(12));
 	// ANormal ( 3 floats )
-	VAO_1.LinkVBO(VBO_1, 2, 3, GL_FLOAT, stride, GL_FALSE, (void*)16);
+	VAO_1.LinkVBO(VBO_1, 2, 3, GL_FLOAT, stride, GL_FALSE, voidcast(16));
 	// UV ( uint32 = short + short )
-	VAO_1.LinkVBO(VBO_1, 3, 2, GL_UNSIGNED_SHORT, stride, GL_TRUE, (void*)28);
+	VAO_1.LinkVBO(VBO_1, 3, 2, GL_UNSIGNED_SHORT, stride, GL_TRUE, voidcast(28));
 
 	if (DEBUG)std::cout << "VBO linking complete \n";
 
@@ -176,14 +143,14 @@ void Engine3D::setupInstanceVBO() {
 
 	for (int i = 0; i < 4; i++) {
 		glEnableVertexAttribArray(4 + i);
-		glVertexAttribPointer(4 + i, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(sizeof(glm::vec4) * i));
+		glVertexAttribPointer(4 + i, 4, GL_FLOAT, GL_FALSE, sizeof(InstanceData), voidcast(sizeof(glm::vec4) * i));
 		glVertexAttribDivisor(4 + i, 1);
 	}
 	glEnableVertexAttribArray(8);
-	glVertexAttribPointer(8, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(InstanceData), (void*)64);
+	glVertexAttribPointer(8, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(InstanceData), voidcast(64));
 	glVertexAttribDivisor(8, 1);
 	glEnableVertexAttribArray(9);
-	glVertexAttribPointer(9, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(InstanceData), (void*)68);
+	glVertexAttribPointer(9, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(InstanceData), voidcast(68));
 	glVertexAttribDivisor(9, 1);
 	VAO_1.Unbind();
 
@@ -260,7 +227,7 @@ void Engine3D::DrawAllInstances() {
 		uintptr_t base = (uintptr_t)(InstH.offset * stride);
 		for (int j = 0; j < 4; j++) {
 			glEnableVertexAttribArray(4 + j);
-			glVertexAttribPointer(4 + j, 4, GL_FLOAT, GL_FALSE, stride, (void*)(base + j * 16));
+			glVertexAttribPointer(4 + j, 4, GL_FLOAT, GL_FALSE, stride, voidcast(base + j * 16));
 			glVertexAttribDivisor(4 + j, 1);
 		}
 
@@ -268,15 +235,15 @@ void Engine3D::DrawAllInstances() {
 		uint32_t offUV = 68;
 
 		glEnableVertexAttribArray(8);
-		void* offset = (void*)(uintptr_t)(InstH.offset * stride + offRGBA);
+		void* offset = voidcast((uintptr_t)(InstH.offset * stride + offRGBA));
 		glVertexAttribPointer(8, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, offset);
 		glVertexAttribDivisor(8, 1);
 		glEnableVertexAttribArray(9);
-		offset = (void*)(uintptr_t)(InstH.offset * stride + offUV);
+		offset = voidcast((uintptr_t)(InstH.offset * stride + offUV));
 		glVertexAttribPointer(9, 2, GL_UNSIGNED_SHORT, GL_TRUE, stride, offset);
 		glVertexAttribDivisor(9, 1);
 
-		void* offsetPtr = (void*)(uintptr_t)(BlueprintHandle.offset * sizeof(GLuint));
+		void* offsetPtr = voidcast(BlueprintHandle.offset * sizeof(GLuint));
 
 		Handle VBO_Handle = MainScene.GetVBO_Organizer().GetHandleData(HandleID & 4095);
 
@@ -369,12 +336,13 @@ void Engine3D::RenderInstances(int timeOfDay) {
 	shadowPass();
 	renderPass(45.0f, 0.1f, 1000.0f);
 }
-
+/* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 Tile* Engine3D::getVisibleCameraFrustum() {
 	return MainScene.FindTileForPosition(
 		AVertex(), UserCamera.Position
 	);
 }
+*/
 
 void Engine3D::EngineTerminate() {
 

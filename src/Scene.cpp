@@ -49,7 +49,7 @@ ArrayOrganizer<AVertex>& Scene::GetVBO_Organizer() {
 ArrayOrganizer<GLuint>& Scene::GetEBO_Organizer() {
 	return EBO_Organizer;
 }
-
+/* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 const InstanceData* Scene::GetInstanceOrganizerPTR(int HandleID) {
 	return InstanceOrganizer.GetPointerFromHandle(HandleID);
 }
@@ -59,7 +59,7 @@ const AVertex* Scene::GetVBO_OrganizerPTR(int HandleID) {
 const GLuint* Scene::GetEBO_OrganizerPTR(int HandleID) {
 	return EBO_Organizer.GetPointerFromHandle(HandleID);
 }
-
+*/
 void Scene::GenerateHandle(int HandleID, int TARGET, int capacity) {
 	if (TARGET == INSTANCE_ORGANIZER_TARGET) {
 		InstanceOrganizer.NewHandle(HandleID, capacity);

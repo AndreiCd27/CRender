@@ -7,6 +7,10 @@ const char* WINDOW_TITLE = "window";
 
 #include "Engine3D.h"
 
+// Modify to true if you want to test out Instance translations
+#define translations false
+#define easyMethods false
+
 #define Scene engine->getScene()
 #define workspace Scene->GetWorkspace()
 
@@ -106,20 +110,49 @@ int main() {
 		AVector3 rot = cube1->GetRotation();
 		AVector3 size = cube1->GetSize();
 		cube1->SetSize(size * 2.0f);
-		cube1->SetPosition(pos + AVector3(0.0f, 20.0f, -15.0f));
-		cube1->SetRotation(rot + AVector3(0.0f, 45.0f, 0.0f));
+		cube1->SetPosition(pos + AVector3(40.0f, 20.0f, -15.0f));
+		AVector3 rotByVector = AVector3(0.0f, 45.0f, 0.0f);
+		cube1->SetRotation(
+			rot.Rotate(rotByVector)
+		);
+		// Equivalent
+		cube1->SetRotation(cube1->GetRotation() + rotByVector);
+		cube1->SetColor(100, 100, 100, 255);
+
+		// We can use the BlueprintID of an Instance to make a new Instance
+		int cube1id = cube1->GetBlueprintID();
+		Blueprint* cubBlueprint = Scene->GetBlueprints()[cube1id];
+		if (&*cubBlueprint == &*cubeB) std::cout << "Same blueprint \n";
+
+		auto cube2 = Scene->CreateInstance(cubBlueprint,"Cube 1");
+		cube2->SetParent(firstcube);
+		std::cout << firstcube->GetChildren().size() << "\n";
+
+		// We can also get direction vectors
+		AVector3 dir = AVector3(100.0f, 50.0f, 20.0f);
+		dir.Normalize_InPlace();
+		cube2->SetPosition(cube2->GetPosition() + dir * 50.0f);
+		cube2->SetColor(170, 0, 200, 255);
 	}
 	////////////////////////////////////////////////////////////////////////////////
 
 	std::cout << "Meshes constructed \n";
 
-	engine->setCamera(0.0f, 40.0f, 120.0f);
-	engine->setSunCamera(0.0f, 100.0f, 1.0f);
+	if (easyMethods) {
+		engine->SetupFull("static");
+	}
+	else {
+		engine->setCamera(0.0f, 40.0f, 120.0f);
+		engine->setSunCamera(0.0f, 100.0f, 1.0f);
 
-	engine->setupShaders(); //Uses Camera Class and Mesh Instances
+		engine->setupShaders(); //Uses Camera Class and Mesh Instances
 
-	engine->setupGeometryArrayObjects("static");
-	engine->setupInstanceVBO();
+		engine->setupGeometryArrayObjects("static");
+		engine->setupInstanceVBO();
+	}
+
+	engine->DEBUG_showCameraVectors();
+	engine->DEBUG_ArrayOrganizers();
 
 	std::cout << "Shaders created\n";
 
@@ -166,8 +199,6 @@ int main() {
 			engine->getCamera(true).Position = AVector3(10.0f * cosROT, 200.0f * sinROT, 100.0f);
 			ROT += 2;
 
-			bool translations = false;
-
 			if (translations) {
 				float dt = (float)(cntt / 10 % 100);
 				plane->SetPosition(AVector3(dt, -5.0f, 0.0f));
@@ -184,13 +215,18 @@ int main() {
 
 			cntt++;
 		}
-		if (cntt > 20000) {
+		if (cntt > 2000) {
 			// Test out dynamic deletions
 			plane->Destroy();
 		}
 
-		engine->shadowPass();
-		engine->renderPass(45.0f, 0.1f, 1000.0f);
+		if (easyMethods) {
+			engine->RenderInstances(12); // Parameter = timeOfDay (determines SunCamera location)
+		}
+		else {
+			engine->shadowPass();
+			engine->renderPass(45.0f, 0.1f, 1000.0f);
+		}
 	}
 
 	std::cout << " \n\n | -------- CLEANING PROCESS STARTED --------------- | \n\n";
