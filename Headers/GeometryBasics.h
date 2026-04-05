@@ -30,17 +30,19 @@ public:
 	AVector3() = default;
 	AVector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {};
 	~AVector3() = default;
-	AVector3 operator+(const AVector3& dr);
-	AVector3 operator-(const AVector3& dr);
-	AVector3 operator*(const AVector3& dr);
-	AVector3 operator*(const float& scalar);
+	AVector3 operator+(const AVector3& dr) const;
+	AVector3 operator-(const AVector3& dr)const;
+	AVector3 operator*(const AVector3& dr)const;
+	AVector3 operator*(const float& scalar)const;
 	AVector3& operator+=(const AVector3& dr);
 	AVector3& operator-=(const AVector3& dr);
-	AVector3 operator^(const AVector3& dr); // Used for cross product
+	AVector3 operator^(const AVector3& dr)const; // Used for cross product
+	AVector3& operator=(const glm::vec3& dr);
 	AVector3 Normalize();
 	void Normalize_InPlace();
-	AVector3 Rotate(AVector3& ROT);
-	void Rotate_InPlace(AVector3& ROT);
+	AVector3 Rotate(const AVector3& ROT);
+	void Rotate_InPlace(const AVector3& ROT);
+	float Magnitude() const;
 
 	operator glm::vec3() const; // Converts easily to glm::vec3
 
@@ -58,10 +60,9 @@ public:
 	AVector3 NORMAL;
 	A_UV UV;                         // TODO: Textures
 	//--------------- 32 bytes
-
-
 	AVertex() = default;
 	AVertex(float x, float y, float z);
 	AVertex(float x, float y, float z, int R, int G, int B, int A);
 	AVertex(AVector3 _POS, AVector3 _NORMAL, int R, int G, int B, int A, float U, float V);
 };
+

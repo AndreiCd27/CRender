@@ -76,7 +76,6 @@ public:
 	const AVertex* GetVBO_OrganizerPTR(int HandleID);
 	const GLuint* GetEBO_OrganizerPTR(int HandleID);
 	*/
-	Handle GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET);
 
 	std::weak_ptr<const Instance> GetWorkspace();
 
@@ -89,4 +88,6 @@ public:
 	Blueprint* CreatePrism(const std::vector<AVertex>& vertices, int VertexNumber, float height);
 	Blueprint* CreateRectPrism(float length, float width, float height);
 	Blueprint* CreateCube(float length);
+
+	Blueprint* CreateUnitVector();
 };

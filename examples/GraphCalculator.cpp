@@ -6,6 +6,13 @@
 
 const long long int sampleSize = 63; // defines a 2N by 2N area of cubes
 const int gridSize = 16;
+int f_div = 100; // Divisor for our function values
+float pos_scalar = 0.5f;
+
+const int graphFunction3D(int x, int z) {
+    //outputs y (UP)
+    return x * x - z * z;
+}
 
 const float vectorWidth = 4.0f;
 
@@ -56,7 +63,7 @@ public:
 
 int main() {
 
-    int success = engine->setupWindow(1500, 1100, "window");
+    int success = engine->setupWindow(900, 600, "window");
     if (!success) { std::cerr << "Error at setup \n"; Engine3D::EngineTerminate(); return -1; }
 
     double t0 = glfwGetTime();
@@ -94,13 +101,33 @@ int main() {
     t0 = glfwGetTime();
     std::cout << "B) Timer started \n";
 
-    AVector3 initPos = AVector3(36.0f, 15.0f, 44.0f);
-    auto showcaseCUBE = scene->CreateInstance(cube, "showcase");
-    showcaseCUBE->SetPosition(initPos);
-    showcaseCUBE->SetSize(AVector3(10.0f, 10.0f, 10.0f));
+    auto plane = scene->CreateInstance(cube, "Plane");
+    plane->SetColor(100, 100, 100, 255);
+    plane->SetSize(AVector3(100.0f, 100.0f, 0.25f));
 
     // VECTOR
 
+    AVector3 vec3_1 = AVector3(15.0f, 0.0f, 10.0f);
+    AVector3 vec3_2 = AVector3(5.0f, 0.0f, -15.0f);
+
+    MyVector v1(vec3_1, AColor3(255, 0, 0, 255));
+    MyVector v2(vec3_2, AColor3(0, 255, 0, 255));
+
+    AVector3 vec3_add = vec3_1 + vec3_2;
+    MyVector v3(vec3_add, AColor3(255, 255, 0, 255));
+
+    AVector3 vec3_cross = vec3_1 ^ vec3_2;
+    MyVector v4(vec3_cross.Normalize() * 10.0f, AColor3(0, 255, 255, 255));
+
+    // Define our cubes //////////
+    /*
+    for (int x = -sampleSize; x < sampleSize; x++) {
+        for (int z = -sampleSize; z < sampleSize; z++) {
+            int y = graphFunction3D(x, z) / f_div;
+            scene->CreateInstance(cube, "Instance")->SetPosition(AVector3(x, y, z) * pos_scalar);
+        }
+    }
+    */
     //////////////////////////////
 
     engine->SetupFull("static");
@@ -110,15 +137,15 @@ int main() {
     t1 = glfwGetTime();
     std::cout << "Loading time B: " << t1 - t0 << " seconds \n";
 
+    std::cout << "Printing Instance VBO dimensions: \n";
+    scene->GetInstanceOrganizer().print();
+
     //FOR FPS COUNTER
     double PREV_TIME = 0.0f;
     int frameCounter = 0;
-    const double FPSsampleTime = 1.0f / 30.0f;
+    const double FPSsampleTime = 1.0f / 20.0f;
 
     float rot = 0.0f;
-
-    int t = 0;
-    int dk = 0;
 
     while (!engine->windowShouldClose()) {
 
@@ -132,36 +159,26 @@ int main() {
             engine->setWindowTitle(winTitle);
             PREV_TIME = CURRENT_TIME;
             frameCounter = 0;
-
-            t++;
-            if (t > 100 && t <= 150) {
-                AVector3 newPos = initPos * ((float)(50 - dk) / 50.0f);
-                newPos.DEBUG_Print(); std::cout << "\n";
-                showcaseCUBE->SetPosition(newPos);
-                dk++;
-            }
-            if (t > 150 && t <= 200) {
-                showcaseCUBE->SetRotation(AVector3(rot, rot * 2.0f, 0.0f));
-                rot += 1.0f;
-                if (t == 200) dk = 0;
-            }
-            if (t > 200 && t <= 250) {
-                showcaseCUBE->SetSize(
-                    AVector3(10.0f + (float)dk / 5.0f, 10.0f, 10.0f + (float)dk / 10.0f)
-                );
-                dk++;
-                if (t == 250) dk = 0;
-            }
-            if (t > 250 && t <= 300) {
-                showcaseCUBE->SetPosition(initPos * ((float)dk / 50.0f));
-                dk++;
-            }
         }
 
+        AVector3 vec3_1copy = vec3_1.Normalize().Rotate(AVector3(rot * 0.75f, 0.0f, 0.0f)) * vec3_1.Magnitude();
+        AVector3 vec3_2copy = vec3_2.Normalize().Rotate(AVector3(0.0f, 0.0f, rot * 2.0f)) * vec3_2.Magnitude();
+        vec3_add = vec3_1copy + vec3_2copy;
+        vec3_cross = vec3_1copy ^ vec3_2copy;
+        v1.Update(vec3_1copy);
+        v2.Update(vec3_2copy);
+        v3.Update(vec3_add);
+        v4.Update(vec3_cross.Normalize() * 10.0f);
+
+        rot += 0.0f;
+
+        plane->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3_cross);
 
         // GAME-LOOP CODE HERE
         engine->RenderInstances(13);
     }
+
+    //scene->DEBUG_PrintInstanceHierarchy(workspace,0,1,true);
 
     engine->EngineTerminate();
 

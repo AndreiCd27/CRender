@@ -91,7 +91,6 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 	const int drawStyle = getDrawStyle(style);
 
 	VAO_1.Setup();
-
 	VAO_1.Bind();
 
 	if (DEBUG)std::cout << "Got vertex and indicies buffers \n";
@@ -338,7 +337,7 @@ void Engine3D::RenderInstances(int timeOfDay) {
 	double ROT = (timeOfDay - 12) / 12.0f * glm::pi<double>();
 	float sinROT = sin(ROT);
 	float cosROT = cos(ROT);
-	SunCamera.Position = AVector3(100.0f * cosROT, 100.0f * sinROT, 50.0f);
+	SunCamera.Position = AVector3(100.0f * sinROT, 100.0f * cosROT, 50.0f);
 	initGameFrame();
 	shadowPass();
 	renderPass(45.0f, 0.1f, 1000.0f);

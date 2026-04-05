@@ -56,7 +56,7 @@ public:
 
 int main() {
 
-    int success = engine->setupWindow(1500, 1100, "window");
+    int success = engine->setupWindow(900, 600, "window");
     if (!success) { std::cerr << "Error at setup \n"; Engine3D::EngineTerminate(); return -1; }
 
     double t0 = glfwGetTime();
@@ -82,7 +82,7 @@ int main() {
 
     for (int i = -gridSize; i < gridSize; i++) {
         auto lineZ = scene->CreateInstance(cube, "LineZ");
-        float w = (i == 0) ? 0.5f : 0.25f;
+        float w = (i == 0) ? 1.0f : 0.25f;
         lineZ->SetSize(AVector3(w, w, (float)gridSize * 10.0f));
         lineZ->SetPosition(AVector3(5.0f * (float)i, 0.0f, 0.0f));
         lineZ->SetColor(
@@ -94,10 +94,8 @@ int main() {
     t0 = glfwGetTime();
     std::cout << "B) Timer started \n";
 
-    AVector3 initPos = AVector3(36.0f, 15.0f, 44.0f);
     auto showcaseCUBE = scene->CreateInstance(cube, "showcase");
-    showcaseCUBE->SetPosition(initPos);
-    showcaseCUBE->SetSize(AVector3(10.0f, 10.0f, 10.0f));
+    showcaseCUBE->SetPosition(AVector3(10.0f, 5.0f, 8.0f));
 
     // VECTOR
 
@@ -113,12 +111,11 @@ int main() {
     //FOR FPS COUNTER
     double PREV_TIME = 0.0f;
     int frameCounter = 0;
-    const double FPSsampleTime = 1.0f / 30.0f;
+    const double FPSsampleTime = 1.0f / 20.0f;
 
     float rot = 0.0f;
 
     int t = 0;
-    int dk = 0;
 
     while (!engine->windowShouldClose()) {
 
@@ -134,30 +131,9 @@ int main() {
             frameCounter = 0;
 
             t++;
-            if (t > 100 && t <= 150) {
-                AVector3 newPos = initPos * ((float)(50 - dk) / 50.0f);
-                newPos.DEBUG_Print(); std::cout << "\n";
-                showcaseCUBE->SetPosition(newPos);
-                dk++;
-            }
-            if (t > 150 && t <= 200) {
-                showcaseCUBE->SetRotation(AVector3(rot, rot * 2.0f, 0.0f));
-                rot += 1.0f;
-                if (t == 200) dk = 0;
-            }
-            if (t > 200 && t <= 250) {
-                showcaseCUBE->SetSize(
-                    AVector3(10.0f + (float)dk / 5.0f, 10.0f, 10.0f + (float)dk / 10.0f)
-                );
-                dk++;
-                if (t == 250) dk = 0;
-            }
-            if (t > 250 && t <= 300) {
-                showcaseCUBE->SetPosition(initPos * ((float)dk / 50.0f));
-                dk++;
-            }
         }
 
+        
 
         // GAME-LOOP CODE HERE
         engine->RenderInstances(13);

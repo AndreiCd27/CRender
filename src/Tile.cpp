@@ -10,8 +10,9 @@
 Scene::Scene() {
 	//std::cout << "C -> Scene \n";
 	WorldRoot = new Tile(nullptr, 0, 0, START_TILE_LEVEL);
-
-	workspace = std::make_shared<Instance>(nullptr, this, "WORKSPACE");
+	std::vector<AVertex> emptyv;
+	std::vector<GLuint> emptyi;
+	workspace = std::make_shared<Instance>(CreateBlueprint(emptyv, emptyi), this, "WORKSPACE");
 }
 Scene::~Scene() {
 	if (WorldRoot != nullptr) delete WorldRoot;
@@ -85,7 +86,10 @@ std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, const std::stri
 	}
 
 	InstanceOrganizer.Push(HandleID,
-		InstanceData(AVector3(0.0f, 0.0f, 0.0f), AVector3(0.0f, 0.0f, 0.0f), AVector3(1.0f, 1.0f, 1.0f)));
+		InstanceData(AVector3(0.0f, 0.0f, 0.0f), AVector3(0.0f, 0.0f, 0.0f), 
+			AVector3(1.0f, 1.0f, 1.0f), center.POS
+		)
+	);
 
 	newInst->SetHandleOffset(insArrayOrg.GetHandleData(HandleID).size - 1);
 
@@ -129,7 +133,7 @@ Tile::~Tile() {
 }
 
 int Tile::GetTileID() const {
-	return TileID;
+	return this->TileID;
 }
 
 void Tile::DivideTile(uint16_t i, uint16_t j) {
@@ -191,7 +195,7 @@ InstanceData* Instance::GetInstanceData() {
 void Instance::Update() {
 	InstanceData* insData = GetInstanceData();
 	if (insData != nullptr) {
-		insData->SetMatrix(Position, Rotation, Size);
+		insData->SetMatrix(Position, Rotation, Size, Template->Center.POS);
 		insData->SetColor(Color);
 	}
 }

@@ -39,6 +39,8 @@ O documentatie completa va fi incarcata pana la data de 6 aprilie.
 Codul este comentat destul de des, deci puteti folosi repo-ul pentru a va crea proprile implementari. Cu toate acestea, unele clase mai necesita niste redactare. In curand voi adauga niste comentarii mai "riguroase".
 Comentariile din codul sursa au fost redactate in limba engleza pentru a putea fi intelese si de vitorii citiori.
 
+Prezentare https://canva.link/h9ep4cgp4unlef9
+
 ## Instalare / Rularea proiectului
 
 ### Windows
@@ -108,3 +110,26 @@ cmake --build .
 ![Diagrama Claselor (Top Level)](https://github.com/AndreiCd27/CRender/blob/main/Gallery/ClassDiagramTopLevel.png)
 ### Diagrama Claselor (Detaliat) - 2
 ![Diagrama Claselor (Low Level)](https://github.com/AndreiCd27/CRender/blob/main/Gallery/ClassDiagramLowLevel.png)
+
+### Mostenirea
+Intr-un motor grafic de obicei se prefera compozitia mai mult decat mostenirea, si de aceea am ales sa merg pe aceasta cale.
+In opinia mea, este mult mai extensibil un sistem compozit in acest context.
+De exemplu, puteam sa fac clasa Engine3D sa mosteneasca clasa Scene, dar apareau dificultati in momentul in care doream sa putem sa interschimbam o scena cu alta.
+In sistemul actual, problema se rezolva prin implementarea unui std::vector<Scene*>, si un parametru Scene* scene la toate functiile de draw, cu actualizarea obiectelor OpenGL prin glBufferSubData() sau glBufferData(). Alternativ, stocam VAO, VBO, EBO, instanceVBO in clasa Scene.
+
+Cu toate acestea, am observat ca mostenirea poate fi folositoare la obiecte "mici" si similare, dar cu behaviour diferit.
+Asadar, pe langa relatiile de mostenire Instance ---|> Transform ---|> Entity, voi mai enumera inca 3 clase care pot fi adaugate pe viitor care se afla in relatii de mostenire.
+(De mentionat si ca avem clasele ShaderException, SceneException, InstanceException, ArrayOrganizerException si BlueprintException care mostenesc std::runtime_error, deci teoretic avem *7* clase cu relatii de mostenire)
+
+1) Clasa UI_Label ---|> Transform
+   - Mosteneste de la Transform; interpretam axa Z ca fiind fata-spate, astfel determinam ce elemente UI trebuie puse in fata sau in spatele altora
+   - Update() special care ne asigura ca UI-ul se deseneaza *ultimul*, si seteaza toate atributele speciale pentru UI
+   - Metode unice clasei: SetText(text), SetBorderSize(size_px), etc.
+
+2) Clasa UI_Interactive ---|> Transform
+   - Metode unice clasei: Input(key), InputMouse(clickType), InputHover() etc. | toate returneaza *true* daca la frame-ul curent input-ul s-a "declansat" si utilizatorul creaza o functie in Main.cpp care interpreteaza input-ul la frame-ul curent
+   - Alta metoda care poate fi extinsa: SetImage()
+   - Update() overwritten pentru a implementa metodele speciale
+
+3) Clasa UI_Button ---|> UI_Interactive, UI_Label *(mostenire de tip diamant)*
+   - Update() overwritten care asigura concordanta dintre date (de exemplu: sa nu desenam imaginea peste text, dar nici backgroundColor peste imagine)

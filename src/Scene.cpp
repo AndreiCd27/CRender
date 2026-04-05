@@ -21,6 +21,8 @@ void Scene::DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, in
 			sptr->Position.DEBUG_Print();
 			sptr->Rotation.DEBUG_Print();
 			sptr->Size.DEBUG_Print();
+			std::cout << "Center: ";
+			if (sptr->Template) sptr->Template->Center.POS.DEBUG_Print();
 			std::cout << "\n";
 			for (int i = 0; i < depth - 1; i++) std::cout << "|  ";
 			if (depth > 0) std::cout << "|++TRANSFORM_LOCAL: ";
@@ -104,9 +106,11 @@ Blueprint* Scene::CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GL
 		}
 	);
 
-	const float center_scalar = 1.0f / (float)vertices.size();
+	if (!vertices.empty()) {
+		const float center_scalar = 1.0f / (float)vertices.size();
 
-	vcenter = vcenter * center_scalar;
+		vcenter = vcenter * center_scalar;
+	}
 
 	blueprint->Center.POS = vcenter;
 
@@ -240,4 +244,51 @@ Blueprint* Scene::CreateRectPrism(float length, float width, float height) {
 
 Blueprint* Scene::CreateCube(float length) {
 	return CreateRectPrism(length, length, length);
+}
+
+Blueprint* Scene::CreateUnitVector() {
+	float length = 0.8f, w = 0.0625f;
+
+	std::vector<AVertex> v;
+	v.resize(13);
+	// BOTTOM FACE
+	v[0] = AVertex(w, w, 0.0f, 200, 200, 200, 255);
+	v[1] = AVertex(-w, w, 0.0f, 200, 200, 200, 255);
+	v[2] = AVertex(-w, -w, 0.0f, 200, 200, 200, 255);
+	v[3] = AVertex(w, -w, 0.0f, 200, 200, 200, 255);
+	// TOP FACE
+	v[4] = AVertex(w, w, length, 200, 200, 200, 255);
+	v[5] = AVertex(-w, w, length, 200, 200, 200, 255);
+	v[6] = AVertex(-w, -w, length, 200, 200, 200, 255);
+	v[7] = AVertex(w, -w, length, 200, 200, 200, 255);
+	// TOP FACE 2
+	v[8] = AVertex(w * 2.0f, w * 2.0f, length, 200, 200, 200, 255);
+	v[9] = AVertex(-w * 2.0f, w * 2.0f, length, 200, 200, 200, 255);
+	v[10] = AVertex(-w * 2.0f, -w * 2.0f, length, 200, 200, 200, 255);
+	v[11] = AVertex(w * 2.0f, -w * 2.0f, length, 200, 200, 200, 255);
+	// ARROW
+	v[12] = AVertex(0.0f, 0.0f, 1.0f);
+	// CONNECTING VERTICES
+	std::vector<GLuint> ind = { 
+		0, 3, 2, 2, 1, 0, // BOTTOM FACE
+
+		8, 9, 12, // PYRAMID FACE
+		9, 10, 12, // PYRAMID FACE
+		10, 11, 12, // PYRAMID FACE
+		11, 8, 12, // PYRAMID FACE
+
+		// TOP FACE WITH PYRAMID BASE
+		4, 5, 9, 9, 8, 4,
+		5, 6, 10, 10, 9, 5,
+		6, 7, 11, 11, 10, 6,
+		7, 4, 8, 8, 11, 7,
+
+		0, 1, 5, 5, 4, 0, // LATERAL 
+		1, 2, 6, 6, 5, 1, // LATERAL
+		2, 3, 7, 7, 6, 2, // LATERAL
+		3, 0, 4, 4, 7, 3, // LATERAL
+	};
+	Blueprint* b = CreateBlueprint(v, ind);
+	b->Center = AVertex(0.0f, 0.0f, 0.0f);
+	return b;
 }

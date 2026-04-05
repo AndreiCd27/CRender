@@ -15,8 +15,8 @@ private:
 	A_UV UV; // 4 bytes
 public:
 	InstanceData() = default;
-	InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale);
-	void SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale);
+	InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center);
+	void SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center);
 	void SetColor(AColor3 _RGBA);
 };
 
@@ -78,6 +78,9 @@ public:
 	void SetColor(int R, int G, int B, int A);
 	void SetColor(AColor3 _Color);
 	void SetTile(Tile* _tile);
+	
+	void LookAt(AVector3 from, AVector3 to);
+	void SetDirection(AVector3 Direction);
 
 	// ---------- SET PARENT
 

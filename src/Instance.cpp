@@ -3,9 +3,6 @@
 
 Instance::Instance(Blueprint* Template, Scene* scene) : Transform(scene, "Instance") {
 	this->Template = Template;
-
-	EID_UMap[GetEID()] = shared_from_this();
-	Instance_UMap[GetTag()].push_back(GetEID());
 }
 Instance::Instance(Blueprint* Template, Scene* scene, const std::string& TagName) : Transform(scene, TagName) {
 	this->Template = Template;
@@ -122,6 +119,33 @@ void Instance::SetTile(Tile* _tile) {
 	tile = _tile;
 }
 
+const float oneOverPI = 1.0f / 3.14159f;
+
+void Instance::LookAt(AVector3 from, AVector3 to) {
+	AVector3 d = (to - from);
+
+	SetDirection(d);
+
+	SetPosition(from);
+}
+
+void Instance::SetDirection(AVector3 Direction) {
+	float mag = Direction.Magnitude();
+	if (mag < 0.0001f) return;
+
+	glm::vec3 forward = (glm::vec3)Direction.Normalize();
+	glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+	glm::vec3 up = glm::normalize(glm::cross(forward, right));
+	glm::mat3 rot = glm::mat3(right, up, forward);
+
+	glm::vec3 angles;
+	glm::extractEulerAngleXYZ(glm::mat4(rot), angles.x, angles.y, angles.z);
+	angles = 180.0f * oneOverPI * angles;
+
+	Rotation = AVector3(angles.x, angles.y, angles.z);
+	LocalRot = AVector3(angles.x, angles.y, angles.z);
+}
+
 void Instance::AddChild(std::shared_ptr<Instance> Ins) {
 	// Check if child already is in Children vector
 	auto iterator = std::find(Children.begin(), Children.end(), Ins);
@@ -233,17 +257,18 @@ void Instance::GetAscendants(std::vector<std::shared_ptr<Instance>>& container) 
 
 // -------------- INSTANCE DATA METHODS
 
-void InstanceData::SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale) {
+void InstanceData::SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center) {
 	matrix = glm::translate(glm::mat4(1.0f), (glm::vec3)Position);
 	matrix = glm::rotate(matrix, glm::radians(Rotation.x), glm::vec3(1, 0, 0));
 	matrix = glm::rotate(matrix, glm::radians(Rotation.y), glm::vec3(0, 1, 0));
 	matrix = glm::rotate(matrix, glm::radians(Rotation.z), glm::vec3(0, 0, 1));
 	matrix = glm::scale(matrix, (glm::vec3)Scale);
+	matrix = glm::translate(matrix, -(glm::vec3)Center);
 }
 void InstanceData::SetColor(AColor3 _RGBA) {
 	RGBA = _RGBA;
 }
 
-InstanceData::InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale) {
-	SetMatrix(Position, Rotation, Scale);
+InstanceData::InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center) {
+	SetMatrix(Position, Rotation, Scale, Center);
 }
