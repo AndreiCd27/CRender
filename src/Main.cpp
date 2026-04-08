@@ -10,7 +10,7 @@ const int gridSize = 16;
 int f_div = 1; // Divisor for our function values
 float pos_scalar = 0.5f;
 
-const int graphFunction3D(int x, int z) {
+int graphFunction3D(int x, int z) {
     //outputs y (UP)
     return (int)(sinf((float)x / 32.0f * glm::pi<float>()) * cosf((float)z / 32.0f * glm::pi<float>()) * 60.0f);
 }
@@ -53,12 +53,10 @@ public:
         if (this == &dr) {
             return *this;
         }
-        v = scene->CreateInstance(vectB, "Vector");
         vec3 = dr.vec3;
         applyPoint = dr.applyPoint;
-        v->SetSize(AVector3(vectorWidth, vectorWidth, vec3.Magnitude()));
-        v->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3);
-        v->SetPosition(applyPoint);
+        MyVector copy(vec3, AColor3(0,0,0,255));
+        return copy;
     }
 };
 
