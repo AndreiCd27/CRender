@@ -87,6 +87,8 @@ void Engine3D::setupShaders() {
 }
 
 void Engine3D::setupGeometryArrayObjects(const char* style) {
+
+	MainScene.ExecuteInstancePool();
 	
 	const int drawStyle = getDrawStyle(style);
 
@@ -206,13 +208,28 @@ Camera& Engine3D::getCamera(bool Sun) { if (Sun) { return SunCamera; } return Us
 Scene* Engine3D::getScene() { return &MainScene; }
 
 void Engine3D::initGameFrame() {
-	//Set background color to be drawn
+	// Framecounter
+	double CURRENT_TIME = glfwGetTime();
+	double timeDifference = CURRENT_TIME - FPS.PREV_TIME;
+	FPS.frameCounter++;
+	if (timeDifference >= FPS.FPSsampleTime) {
+		std::string strFPS = std::to_string((1.0f / timeDifference) * FPS.frameCounter);
+		FPS.msPerFrame = (timeDifference / FPS.frameCounter) * 1000.0f;
+		std::string msPerFrame = std::to_string(FPS.msPerFrame);
+		std::string winTitle = "WINDOW | " + strFPS + " FPS | " + msPerFrame + " ms/frame";
+		setWindowTitle(winTitle);
+		FPS.PREV_TIME = CURRENT_TIME;
+		FPS.frameCounter = 0;
+	}
+	// Execute Instance Updates
+	MainScene.ExecuteInstancePool();
+	// Set background color to be drawn
 	glClearColor(backgroundColor.R, backgroundColor.G, backgroundColor.B, backgroundColor.A);
 }
 
 
 void Engine3D::registerCameraInput(float FOVdeg, float zNear, float zFar) {
-	UserCamera.Inputs(window.getWindow());
+	UserCamera.Inputs(window.getWindow(), FPS.msPerFrame);
 	//UserCamera.Matrix(FOVdeg, zNear, zFar, windowAspectRatio, shaderProgram);
 	UserCamera.Matrix(FOVdeg, zNear, zFar, window.getAspectRatio(), instanceProgram);
 }
@@ -265,9 +282,10 @@ void Engine3D::shadowPassInstanceShader() {
 	shadowProgram.Activate();
 	VAO_1.Bind();
 
-	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size() * sizeof(InstanceData);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
+	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
 
 	// The sun looks from the UserCamera's position, so the shadowsMap doesn't stay forever at (0,0,0)
 	SunCamera.LightMatrix(500.0f, shadowProgram, false, UserCamera.Position);
@@ -282,9 +300,10 @@ void Engine3D::renderPassInstanceShader() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
 
-	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size() * sizeof(InstanceData);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize * sizeof(InstanceData), &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
+	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
 
 	DrawAllInstances();
 }

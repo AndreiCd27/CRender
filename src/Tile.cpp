@@ -30,7 +30,7 @@ unsigned int getCBits(double cd) {
 
 	unsigned int c = std::abs(cd);
 	unsigned int cBits = 0x80000000;
-	cd < 0 ? cBits = cBits - c : cBits = c & cBits;
+	cd < 0 ? cBits = cBits - c : cBits = c | cBits;
 
 	return cBits;
 }
@@ -71,31 +71,105 @@ std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, const std::stri
 	AVertex& center = temp->Center;
 	newInst->SetColor(center.RGBA);
 
-	Tile* targetTile = this->FindTileForPosition(temp->Center, AVector3(0, 0, 0));
+	newInst->SetParent(workspace);
 
-	newInst->SetTile(targetTile);
+	newInst->tile = WorldRoot;
+
+	pool.Elements.push_back(newInst);
+	pool.cBitsX.push_back(0);
+	pool.cBitsZ.push_back(0);
+
+	return newInst;
+}
+
+void Scene::AssignTilesToInstances() {
+	for (int i = 0; i < (int)pool.Elements.size(); i++) {
+		const auto& ins_shr_ptr = pool.Elements[i];
+		AVector3& centerPOS = ins_shr_ptr->Template->Center.POS;
+		double cxd = (double)centerPOS.x + ins_shr_ptr->Position.x;
+		double czd = (double)centerPOS.z + ins_shr_ptr->Position.z;
+		pool.cBitsX[i] = getCBits(cxd);
+		pool.cBitsZ[i] = getCBits(czd);
+	}
+	// Start at bit START_TILE_LEVEL
+		// Continue shifting until you reach MAX_TILE_LEVEL
+	int lvl = START_TILE_LEVEL;
+	unsigned int bin = 1 << (32 - START_TILE_LEVEL);
+
+	while (lvl < MAX_TILE_LEVEL) {
+		for (int i = 0; i < (int)pool.Elements.size(); i++) {
+			const auto& ins_shr_ptr = pool.Elements[i];
+			short int bitX = (pool.cBitsX[i] & bin) >> (32 - lvl);
+			short int bitZ = (pool.cBitsZ[i] & bin) >> (32 - lvl);
+
+			ins_shr_ptr->tile = ins_shr_ptr->tile->Divisions[bitX][bitZ];
+		}
+		lvl++;
+		bin = bin >> 1;
+	}
+	for (int i = 0; i < (int)pool.Elements.size(); i++) {
+		const auto& ins_shr_ptr = pool.Elements[i];
+		int handleID = ins_shr_ptr->Template->GetID() | (ins_shr_ptr->tile->GetTileID() << Tile::shiftComponent);
+		pool.HandleID_UMap[handleID].push_back(ins_shr_ptr);
+	}
+}
+
+void Scene::ExecuteInstancePool() {
 
 	ArrayOrganizer<InstanceData>& insArrayOrg = GetInstanceOrganizer();
 
-	//Create a Handle for TileID [CONCAT] with BlueprintID (templateID attribute)
-	int HandleID = temp->GetID() | (targetTile->GetTileID() << Tile::shiftComponent);
+	if (!pool.Elements.empty()) {
 
-	if (!insArrayOrg.ContainsHandle(HandleID)) {
-		GenerateHandle(HandleID, INSTANCE_ORGANIZER_TARGET, 1);
-		targetTile->PushHandleID(HandleID, insArrayOrg);
+		AssignTilesToInstances();
+
+		for (auto& p : pool.HandleID_UMap) {
+			int HandleIndex = insArrayOrg.GetHandleIndex(p.first);
+			int HandlePrevSize = 0;
+			if (HandleIndex == -1) {
+				// inline GenerateHandle
+				// inline PushHandleID
+				GenerateHandle(p.first, INSTANCE_ORGANIZER_TARGET, (int)p.second.size());
+				HandleIndex = insArrayOrg.GetHandleIndex(p.first);
+				// -----------^ insert into this tile that has tileID contained in HandleID
+			}
+			else {
+				insArrayOrg.Reserve(HandleIndex, (int)p.second.size());
+			}
+			HandlePrevSize = insArrayOrg.incHandleSize(HandleIndex, (int)p.second.size());
+			p.second[0]->tile->PushHandleID(p.first, insArrayOrg);
+			//std::cout << "HandleID = " << p.first << "\n";
+			for (int i = 0; i < (int)p.second.size(); i++) {
+				auto& ins_shr_ptr = p.second[i];
+				ins_shr_ptr->handleID = p.first;
+				ins_shr_ptr->handleOffset = HandlePrevSize + i;
+				//std::cout << ins_shr_ptr->GetTag() << "\n";
+			}
+		}
+
+		pool.Elements.clear();
+		pool.cBitsX.clear();
+		pool.cBitsZ.clear();
+		pool.HandleID_UMap.clear();
 	}
 
-	InstanceOrganizer.Push(HandleID,
-		InstanceData(AVector3(0.0f, 0.0f, 0.0f), AVector3(0.0f, 0.0f, 0.0f), 
-			AVector3(1.0f, 1.0f, 1.0f), center.POS
-		)
-	);
+	if (pool.ToUpdate.empty()) return;
 
-	newInst->SetHandleOffset(insArrayOrg.GetHandleData(HandleID).size - 1);
-
-	newInst->SetParent(workspace);
-
-	return newInst;
+	std::vector<InstanceData>& insArray = insArrayOrg.GetMultiArray();
+	for (auto& ins_shr_ptr : pool.ToUpdate) {
+		if (ins_shr_ptr->handleID != -1) {
+			const Handle& h = insArrayOrg.GetHandleData(ins_shr_ptr->handleID);
+			InstanceData& insData = insArray[h.offset + ins_shr_ptr->handleOffset];
+			insData.SetMatrix(ins_shr_ptr->Position, ins_shr_ptr->Rotation,
+					ins_shr_ptr->Size, ins_shr_ptr->Template->Center.POS);
+			insData.SetColor(ins_shr_ptr->Color);
+			ins_shr_ptr->UpToDate = true;
+			//std::cout << "Updated: " << ins_shr_ptr->GetTag() << "\n";
+		}
+		else {
+			std::cout << "No Handle found! \n";
+		}
+	}
+	pool.ToUpdate.clear();
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -179,25 +253,9 @@ void Tile::RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs) {
 	if (this->Divisions[1][1] != nullptr) this->Divisions[1][1]->RecurseInTilesOutputHandleIDs(HandleIDs);
 }
 
-InstanceData* Instance::GetInstanceData() {
-	if (tile != nullptr && Template != nullptr) {
-		int HandleID = Template->GetID() | (tile->GetTileID() << Tile::shiftComponent);
-		if (ParentScene != nullptr) {
-			ArrayOrganizer<InstanceData>& insArrayOrg = ParentScene->GetInstanceOrganizer();
-			const Handle& h = insArrayOrg.GetHandleData(HandleID);
-			std::vector<InstanceData>& insArray = insArrayOrg.GetMultiArray();
-			return &insArray[h.offset + handleOffset];
-		}
-	}
-	return nullptr;
-}
-
 void Instance::Update() {
-	InstanceData* insData = GetInstanceData();
-	if (insData != nullptr) {
-		insData->SetMatrix(Position, Rotation, Size, Template->Center.POS);
-		insData->SetColor(Color);
-	}
+	UpToDate = false;
+	ParentScene->pool.ToUpdate.push_back(shared_from_this());
 }
 void Instance::Destroy() {
 

@@ -34,5 +34,5 @@ public:
 
 	void LightMatrix(float shadowMapScale, Shader& shader, bool TextureBias, AVector3 lookAtFrom);
 	// Handles camera inputs
-	void Inputs(GLFWwindow* window);
+	void Inputs(GLFWwindow* window, float msPerFrame);
 };

@@ -58,16 +58,16 @@ void Camera::LightMatrix(float shadowMapScale, Shader& shader, bool TextureBias,
 	}
 };
 
-void Camera::Inputs(GLFWwindow* window)
+void Camera::Inputs(GLFWwindow* window, float msPerFrame)
 {
 
 	// Handles key inputs
-
+	const float msInc = msPerFrame / 5.0f;
 	// ROTATION (Q, E, R, T)
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) Yaw -= sensitivity;
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) Yaw += sensitivity;
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) Pitch -= sensitivity;
-	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) Pitch += sensitivity;
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) Yaw -= sensitivity * msInc;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) Yaw += sensitivity * msInc;
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) Pitch -= sensitivity * msInc;
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) Pitch += sensitivity * msInc;
 
 	if (Pitch > 89.0f) Pitch = 89.0f;
 	if (Pitch < -89.0f) Pitch = -89.0f;
@@ -81,12 +81,12 @@ void Camera::Inputs(GLFWwindow* window)
 	this->Rotation = newRotation;
 
 	// (W, A, S, D, I, O)
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) Position += Rotation * speed;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) Position += Rotation * -speed;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) Position += (Rotation ^ Up).Normalize() * -speed;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) Position += (Rotation ^ Up).Normalize() * speed;
-	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) Position += Up * -speed;
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) Position += Up * speed;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) Position += Rotation * speed * msInc;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) Position += Rotation * -speed * msInc;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) Position += (Rotation ^ Up).Normalize() * -speed * msInc;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) Position += (Rotation ^ Up).Normalize() * speed * msInc;
+	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) Position += Up * -speed * msInc;
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) Position += Up * speed * msInc;
 
 	// Avoid camera rolling
 	if (Pitch > 89.0f) Pitch = 89.0f;

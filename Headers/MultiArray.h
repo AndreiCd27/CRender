@@ -65,30 +65,27 @@ class ArrayOrganizer {
 		std::fill(Array.begin() + h.offset + capacityOld, Array.begin() + h.offset + h.capacity, T());
 
 	}
-	/* DEPRECATED
-	void ReservePow2(int HandleIndex, int pow) {
+public:
+
+	void Reserve(int HandleIndex, int reserveSize) {
 		Handle& h = Handles[HandleIndex];
 		int capacityOld = h.capacity;
-		int capacityNew = h.capacity << pow;
 
 		int arraySizeOld = (int)Array.size();
-		Array.resize(arraySizeOld + capacityNew - capacityOld);
+		Array.resize(arraySizeOld + reserveSize);
 
 		auto from = Array.begin() + h.offset + capacityOld;
 		auto to = Array.begin() + arraySizeOld;
 		std::copy_backward(from, to, Array.end());
 
 		for (int i = HandleIndex + 1; i < (int)Handles.size(); i++) {
-			Handles[i].offset += (capacityNew - capacityOld);
+			Handles[i].offset += reserveSize;
 		}
-		h.capacity = capacityNew;
+		h.capacity += reserveSize;
 
 		std::fill(Array.begin() + h.offset + capacityOld, Array.begin() + h.offset + h.capacity, T());
 
 	}
-	*/
-
-public:
 
 	void NewHandle(int HandleID, int capacityPow2) {
 		// Capacity SHOULD be a power of 2 for correct memory alignment,
@@ -167,35 +164,15 @@ public:
 	void PushMultipleData(int HandleID, std::vector<T>& multidata) {
 		int HandleIndex = ID_TO_INDEX[HandleID];
 
-		Handle h = Handles[HandleIndex];
+		Handle& h = Handles[HandleIndex];
+		int increase = (int)multidata.size();
 
-		int oldSize = (int)Array.size();
-
-		if ( h.size + (int)multidata.size() > h.capacity ) {
-			int capacityTarget = h.capacity;
-			if (capacityTarget == 0) capacityTarget = multidata.size();
-			while (h.size + (int)multidata.size() > capacityTarget) {
-				capacityTarget <<= 1;
-				
-			}
-
-			int incrrease = capacityTarget - h.capacity;
-			Array.resize(oldSize + incrrease);
-
-			if (HandleIndex < (int)Handles.size() - 1) {
-				auto from = Array.begin() + h.offset + h.capacity;
-				auto to = Array.begin() + oldSize;
-				std::copy_backward(from, to, Array.end());
-
-				for (int i = HandleIndex + 1; i < (int)Handles.size(); i++) {
-					Handles[i].offset += incrrease;
-				}
-			}
-			Handles[HandleIndex].capacity = capacityTarget;
+		if (h.size + increase >= h.capacity) {
+			Reserve(HandleIndex, increase);
 		}
 
-		std::copy(multidata.begin(), multidata.end(), Array.begin() + Handles[HandleIndex].offset + h.size);
-		Handles[HandleIndex].size += (int)multidata.size();
+		std::copy(multidata.begin(), multidata.end(), Array.begin() + h.offset + h.size);
+		h.size += increase;
 	}
 	
 	void print() {
@@ -206,8 +183,14 @@ public:
 		}
 	}
 	
+	// Increments Handle Size and returns size before the incrementation
+	int incHandleSize(int HandleIndex, int _size) {
+		int prevSize = Handles[HandleIndex].size;
+		Handles[HandleIndex].size += _size;
+		return prevSize;
+	}
 
-	Handle GetHandleData(int HandleID) {
+	const Handle& GetHandleData(int HandleID) {
 		auto iterator = ID_TO_INDEX.find(HandleID);
 		if (iterator == ID_TO_INDEX.end()) {
 			throw ArrayOrganizerException("Invalid ID " + std::to_string(HandleID), 0);
@@ -232,6 +215,10 @@ public:
 
 	bool ContainsHandle(int HandleID) {
 		return !(ID_TO_INDEX.find(HandleID) == ID_TO_INDEX.end());
+	}
+	int GetHandleIndex(int HandleID) {
+		if (ID_TO_INDEX.find(HandleID) == ID_TO_INDEX.end()) return -1;
+		return ID_TO_INDEX[HandleID];
 	}
 
 };

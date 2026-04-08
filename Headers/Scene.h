@@ -13,7 +13,23 @@
 #define VBO_ORGANIZER_TARGET 1
 #define EBO_ORGANIZER_TARGET 2
 
+#define ShrInstances std::vector<std::shared_ptr<Instance>>
+
 class Tile;
+
+class InstancePool {
+public:
+	ShrInstances Elements;
+
+	std::vector<unsigned int> cBitsX;
+	std::vector<unsigned int> cBitsZ;
+
+	std::unordered_map<int, ShrInstances> HandleID_UMap;
+
+	ShrInstances ToUpdate;
+
+	friend class Instance;
+};
 
 class SceneException : public std::runtime_error {
 public:
@@ -44,7 +60,12 @@ private:
 	// Right now not used
 	std::vector<int> VisibleInstances;
 
+	InstancePool pool;
+
 public:
+
+	void AssignTilesToInstances();
+	void ExecuteInstancePool();
 
 	Tile* WorldRoot = nullptr;
 
@@ -90,4 +111,6 @@ public:
 	Blueprint* CreateCube(float length);
 
 	Blueprint* CreateUnitVector();
+
+	friend void Instance::Update();
 };

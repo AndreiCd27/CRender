@@ -33,10 +33,11 @@ public:
 	std::vector<Tile*> RecurseInTiles();
 	void RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs);
 
-	int GetTileID() const;
+	inline int GetTileID() const;
 
 	const std::vector<int>& GetRelatedHandleIDs();
 	void PushHandleID(int HandleID, ArrayOrganizer<InstanceData>& insArrayOrg);
 
 	friend Tile* Scene::FindTileForPosition(const AVertex& center, AVector3 Position);
+	friend void Scene::AssignTilesToInstances();
 };

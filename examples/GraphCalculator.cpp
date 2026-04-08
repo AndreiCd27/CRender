@@ -6,7 +6,7 @@
 
 const long long int sampleSize = 63; // defines a 2N by 2N area of cubes
 const int gridSize = 16;
-int f_div = 100; // Divisor for our function values
+int f_div = 64; // Divisor for our function values
 float pos_scalar = 0.5f;
 
 const int graphFunction3D(int x, int z) {
@@ -103,12 +103,12 @@ int main() {
 
     auto plane = scene->CreateInstance(cube, "Plane");
     plane->SetColor(100, 100, 100, 255);
-    plane->SetSize(AVector3(100.0f, 100.0f, 0.25f));
+    plane->SetSize(AVector3(10.0f, 10.0f, 0.25f));
 
     // VECTOR
 
-    AVector3 vec3_1 = AVector3(15.0f, 0.0f, 10.0f);
-    AVector3 vec3_2 = AVector3(5.0f, 0.0f, -15.0f);
+    AVector3 vec3_1 = AVector3(30.0f, 0.0f, 20.0f);
+    AVector3 vec3_2 = AVector3(10.0f, 0.0f, -30.0f);
 
     MyVector v1(vec3_1, AColor3(255, 0, 0, 255));
     MyVector v2(vec3_2, AColor3(0, 255, 0, 255));
@@ -120,14 +120,14 @@ int main() {
     MyVector v4(vec3_cross.Normalize() * 10.0f, AColor3(0, 255, 255, 255));
 
     // Define our cubes //////////
-    /*
+
     for (int x = -sampleSize; x < sampleSize; x++) {
         for (int z = -sampleSize; z < sampleSize; z++) {
             int y = graphFunction3D(x, z) / f_div;
-            scene->CreateInstance(cube, "Instance")->SetPosition(AVector3(x, y, z) * pos_scalar);
+            scene->CreateInstance(cube, "Instance")->SetPosition(AVector3(x, y - 20.0f, z) * pos_scalar);
         }
     }
-    */
+
     //////////////////////////////
 
     engine->SetupFull("static");
@@ -170,7 +170,7 @@ int main() {
         v3.Update(vec3_add);
         v4.Update(vec3_cross.Normalize() * 10.0f);
 
-        rot += 0.0f;
+        rot += 0.025f;
 
         plane->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3_cross);
 

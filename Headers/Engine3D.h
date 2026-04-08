@@ -60,6 +60,14 @@ private:
 	void shadowPassInstanceShader();
 	void renderPassInstanceShader();
 
+	//FOR FPS COUNTER
+	struct {
+		int frameCounter = 0;
+		float msPerFrame = 0;
+		double PREV_TIME = 0.0f;
+		const double FPSsampleTime = 1.0f / 20.0f;
+	}FPS;
+
 public:
 
 	bool DEBUG = false;

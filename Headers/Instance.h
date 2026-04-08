@@ -15,8 +15,8 @@ private:
 	A_UV UV; // 4 bytes
 public:
 	InstanceData() = default;
-	InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center);
-	void SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center);
+	InstanceData(const AVector3& Position, const AVector3& Rotation, const AVector3& Scale, const AVector3& Center);
+	void SetMatrix(const AVector3& Position,const AVector3& Rotation, const AVector3& Scale, const AVector3& Center);
 	void SetColor(AColor3 _RGBA);
 };
 
@@ -24,9 +24,15 @@ class Instance : public Transform, public std::enable_shared_from_this<Instance>
 
 	Blueprint* Template = nullptr; // Blueprint object
 	//Add more stuff, like materials and textures
+
 	Tile* tile = nullptr; // Tile it belongs in, calculated through Position
-	int handleOffset = 0;
-	// The offset calculated from the coresponding HandleID
+
+	int handleOffset = 0; // The offset calculated from the coresponding HandleID
+	int handleID = -1;
+
+	// UpToDate boolean variable to determine if
+	// Transform Vectors were already calculated previously
+	bool UpToDate = true;
 
 	// This Children vector implements an instance hierarchy
 	// A child must belong to ONLY ONE parent  [ Child >o---- Parent ]
@@ -51,7 +57,6 @@ class Instance : public Transform, public std::enable_shared_from_this<Instance>
 	void AddToUMap(std::shared_ptr<Instance> parent);
 	void DelFromUMap(std::shared_ptr<Instance> parent);
 
-	void Update() override;
 	void Update_Cascade();
 
 	void SetLocalPos();
@@ -59,6 +64,8 @@ class Instance : public Transform, public std::enable_shared_from_this<Instance>
 	void CalculateWorldVectors();
 
 public:
+
+	void Update() override;
 
 	// --------- CONSTRUCTORS (requires a Blueprint first)
 
@@ -94,8 +101,6 @@ public:
 	// ---------- GETTERS
 
 	int GetBlueprintID();
-
-	InstanceData* GetInstanceData();
 
 	AVector3 GetPosition();
 	AVector3 GetRotation();

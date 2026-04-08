@@ -1,247 +1,200 @@
-#include <iostream>
-#include <csignal>
-
-const int WINDOW_WIDTH = 1200;
-const int WINDOW_HEIGHT = 800;
-const char* WINDOW_TITLE = "window";
-
 #include "Engine3D.h"
+#include <iostream>
 
-// Modify to true if you want to test out Instance translations
-#define translations true
-#define easyMethods false
+#define scene engine->getScene()
+#define workspace scene->GetWorkspace().lock()
 
-#define Scene engine->getScene()
-#define workspace Scene->GetWorkspace()
+const long long int sampleSize = 64; // defines a 2N by 2N area of cubes
+const float funcGridSize = 4.0f;
+const int gridSize = 16;
+int f_div = 1; // Divisor for our function values
+float pos_scalar = 0.5f;
 
-// ENVIROMENT VARIABLE, binds to SIGTERM such that Engine3D is terminated
-//  without memory leaks and the cleanup process succeds
-bool force_exit = false;
+const int graphFunction3D(int x, int z) {
+    //outputs y (UP)
+    return (int)(sinf((float)x / 32.0f * glm::pi<float>()) * cosf((float)z / 32.0f * glm::pi<float>()) * 60.0f);
+}
 
-void exit_signal(int SIGNAL) {
-	if (SIGNAL == SIGTERM) {
-		force_exit = true;
-	}
+const float vectorWidth = 4.0f;
+
+Engine3D* engine = Engine3D::GetEngine3D();
+auto vectB = scene->CreateUnitVector();
+
+class MyVector {
+    std::shared_ptr<Instance> v = nullptr;
+    AVector3 vec3 = AVector3(0.0f, 1.0f, 0.0f);
+    AVector3 applyPoint = AVector3(0.0f, 0.0f, 0.0f);
+public:
+    MyVector(AVector3 _vec3, AColor3 CLR) : vec3(_vec3) {
+        v = scene->CreateInstance(vectB, "Vector");
+        v->SetColor(CLR);
+        v->SetSize(AVector3(vectorWidth, vectorWidth, vec3.Magnitude()));
+        v->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3);
+    }
+    void Update(AVector3 _vec3) {
+        vec3 = _vec3;
+        v->SetSize(AVector3(vectorWidth, vectorWidth, vec3.Magnitude()));
+        v->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3);
+        v->SetPosition(applyPoint);
+    }
+    void SetApplyPoint(AVector3 _applyPoint) {
+        applyPoint = _applyPoint;
+        v->SetPosition(applyPoint);
+    }
+    MyVector(const MyVector& dr) {
+        v = scene->CreateInstance(vectB, "Vector");
+        vec3 = dr.vec3;
+        applyPoint = dr.applyPoint;
+        v->SetSize(AVector3(vectorWidth, vectorWidth, vec3.Magnitude()));
+        v->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3);
+        v->SetPosition(applyPoint);
+    }
+    MyVector& operator=(const MyVector& dr) {
+        if (this == &dr) {
+            return *this;
+        }
+        v = scene->CreateInstance(vectB, "Vector");
+        vec3 = dr.vec3;
+        applyPoint = dr.applyPoint;
+        v->SetSize(AVector3(vectorWidth, vectorWidth, vec3.Magnitude()));
+        v->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3);
+        v->SetPosition(applyPoint);
+    }
+};
+
+const AColor3 getClr(const int x, const int y, const int z) {
+    return AColor3((int)((sinf((float)x / 16.0f) + 1.0f)/2.0f * 255.0f), y * 2, (int)((cosf((float)z / 16.0f) + 1.0f)/2.0f * 255.0f), 255);
 }
 
 int main() {
 
-	std::signal(SIGTERM, exit_signal);
+    int success = engine->setupWindow(1200, 900, "window");
+    if (!success) { std::cerr << "Error at setup \n"; Engine3D::EngineTerminate(); return -1; }
 
-	Engine3D* engine = Engine3D::GetEngine3D();
-	std::cout << "Engine initialized \n";
+    double t0 = glfwGetTime();
+    std::cout << "A) Timer started \n";
 
-	int success = engine->setupWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
-	if (!success) { std::cerr << "Error at setup \n"; Engine3D::EngineTerminate(); return -1; }
+    Blueprint* cube = scene->CreateCube(funcGridSize);
+    cube->SetColor(0, 255, 0, 255);
 
-	engine->setBackground(0.2f, 0.3f, 0.8f, 1.0f);
+    /*
+    const int mul = 150 / gridSize;
 
-	// HERE WE CREATE OUR OBJECTS /////////////////////////////////////////////////
+    for (int i = -gridSize; i < gridSize; i++) {
+        auto lineX = scene->CreateInstance(cube, "LineX");
+        float w = (i == 0) ? 0.5f : 0.25f;
+        lineX->SetSize(AVector3((float)gridSize * 10.0f, w, w));
+        lineX->SetPosition(AVector3(0.0f, 0.0f, 5.0f * (float)i));
+        lineX->SetColor(
+            150 - std::abs(i) * mul, 150, 150 - std::abs(i) * mul, 255);
+    }
 
-	Blueprint* humanMesh = Scene->LoadSTLGeomFile("resources/BASEmodel.stl", 8.0f);
-	if (humanMesh) {
-		std::cout << "Created: Human \n";
-		for (int i = 0; i < 4; i++) {
-			auto human = Scene->CreateInstance(humanMesh,
-				"Human " + std::to_string(i) //TAG NAME
-			);
-			human->SetPosition(AVector3(0.0f + i * 40.0f, 12.0f, -25.0f));
-			human->SetColor(i * 50, i * 50, 255 - i * 50, 255);
-			human->SetRotation(AVector3(-90.0f, 0.0f, 0.0f));
-		}
-	}
-	else {
-		delete humanMesh;
-	}
+    auto lineY = scene->CreateInstance(cube, "LineY");
+    lineY->SetSize(AVector3(0.5f, (float)gridSize * 10.0f, 0.5f));
+    lineY->SetColor(150, 150, 150, 255);
 
-	Blueprint* cubeB = Scene->CreateCube(10.0f);
+    for (int i = -gridSize; i < gridSize; i++) {
+        auto lineZ = scene->CreateInstance(cube, "LineZ");
+        float w = (i == 0) ? 0.5f : 0.25f;
+        lineZ->SetSize(AVector3(w, w, (float)gridSize * 10.0f));
+        lineZ->SetPosition(AVector3(5.0f * (float)i, 0.0f, 0.0f));
+        lineZ->SetColor(
+            150, 150 - std::abs(i) * mul, 150 - std::abs(i) * mul, 255);
+    }
+    */
 
-	std::shared_ptr<Instance> firstcube = nullptr;
-	std::shared_ptr<Instance> prevI = nullptr;
-	for (int i = 0; i < 10; i++) {
-		auto I = Scene->CreateInstance(cubeB, "Cube " + std::to_string(i));
-		if (prevI) {
-			I->SetParent(prevI);
-		}
-		else {
-			firstcube = I;
-		}
-		I->SetColor(0, i * 15, 255, 255);
-		I->SetPosition(AVector3(10.0f * i, 5.0f, 10.0f * i));
-		prevI = I;
-	}
+    double t1 = glfwGetTime();
+    std::cout << "Loading time A: " << t1 - t0 << " seconds \n";
+    t0 = glfwGetTime();
+    std::cout << "B) Timer started \n";
 
-	auto plane = Scene->CreateInstance(cubeB, "Plane");
-	plane->SetPosition(AVector3(0.0f, -5.0f, 0.0f));
-	plane->SetSize(AVector3(20.0f, 1.0f, 20.0f));
-	plane->SetColor(AColor3(50, 255, 25, 255));
+    auto plane = scene->CreateInstance(cube, "Plane");
+    plane->SetColor(100, 100, 100, 255);
+    plane->SetSize(AVector3(10.0f, 10.0f, 0.25f));
 
-	std::vector<AVertex> Verticies = { AVertex(-4.8f, 0.0f, -4.0f), AVertex(3.5f, 0.0f, -3.75f), AVertex(1.6f, 0.0f, 4.15f), AVertex(-2.65f, 0.0f, 2.75f) };
-	Blueprint* prismB = Scene->CreatePrism(Verticies, 4, 10.0f);
+    // VECTOR
 
-	auto triPrism = Scene->CreateInstance(prismB, "TriPrism");
-	triPrism->SetColor(255, 255, 0, 255);
-	triPrism->SetPosition(AVector3(-30.0f, 5.0f, -25.0f));
-	triPrism->SetSize(AVector3(5.0f, 5.0f, 5.0f));
+    AVector3 vec3_1 = AVector3(30.0f, 0.0f, 20.0f);
+    AVector3 vec3_2 = AVector3(10.0f, 0.0f, -30.0f);
 
-	triPrism->SetParent(plane);
+    MyVector v1(vec3_1, AColor3(255, 0, 0, 255));
+    MyVector v2(vec3_2, AColor3(0, 255, 0, 255));
 
-	//Print blueprints
-	int i = 0;
-	for (auto& blueprint : Scene->GetBlueprints()) {
-		std::cout << "Blueprint " << i << " has ID " << blueprint->GetID() << "\n";
-		i++;
-	}
-	// GetParent method
-	auto parent = triPrism->GetParent();
-	if (parent == plane) {
-		std::cout << "These objects are the same \n";
-	}
-	// AllChildrenWith method
-	if (workspace.lock()) {
-		auto cube1 = Scene->CreateInstance(cubeB, "Cube 1");
-		cube1->SetParent(firstcube);
-		const std::string s = "Cube 1";
-		const std::vector<std::shared_ptr<Instance>>& vectinst = firstcube->AllChildrenWith(s);
-		std::cout << "Instances with name " << s << ": " << vectinst.size() << "\n";
+    AVector3 vec3_add = vec3_1 + vec3_2;
+    MyVector v3(vec3_add, AColor3(255, 255, 0, 255));
 
-		// GetAVector3s
-		AVector3 pos = cube1->GetPosition();
-		AVector3 rot = cube1->GetRotation();
-		AVector3 size = cube1->GetSize();
-		cube1->SetSize(size * 2.0f);
-		cube1->SetPosition(pos + AVector3(40.0f, 20.0f, -15.0f));
-		AVector3 rotByVector = AVector3(0.0f, 45.0f, 0.0f);
-		cube1->SetRotation(
-			rot.Rotate(rotByVector)
-		);
-		// Equivalent
-		cube1->SetRotation(cube1->GetRotation() + rotByVector);
-		cube1->SetColor(100, 100, 100, 255);
+    AVector3 vec3_cross = vec3_1 ^ vec3_2;
+    MyVector v4(vec3_cross.Normalize() * 10.0f, AColor3(0, 255, 255, 255));
 
-		// We can use the BlueprintID of an Instance to make a new Instance
-		int cube1id = cube1->GetBlueprintID();
-		Blueprint* cubBlueprint = Scene->GetBlueprints()[cube1id];
-		if (cubBlueprint == cubeB) std::cout << "Same blueprint \n";
+    // Define our cubes //////////
 
-		auto cube2 = Scene->CreateInstance(cubBlueprint, "Cube 1");
-		cube2->SetParent(firstcube);
-		std::cout << firstcube->GetChildren().size() << "\n";
+    int val[sampleSize * 2][sampleSize * 2];
+    std::shared_ptr<Instance> graph[sampleSize * 2][sampleSize * 2];
 
-		// We can also get direction vectors
-		AVector3 dir = AVector3(100.0f, 50.0f, 20.0f);
-		dir.Normalize_InPlace();
-		cube2->SetPosition(cube2->GetPosition() + dir * 50.0f);
-		cube2->SetColor(170, 0, 200, 255);
-	}
-	////////////////////////////////////////////////////////////////////////////////
+    for (int x = -sampleSize; x < sampleSize; x++) {
+        for (int z = -sampleSize; z < sampleSize; z++) {
+            const int y = graphFunction3D(x, z) / f_div;
+            val[x + sampleSize][z + sampleSize] = y;
+            graph[x + sampleSize][z + sampleSize] = scene->CreateInstance(cube, "t_" + std::to_string(x) + "_" + std::to_string(z));
+            graph[x + sampleSize][z + sampleSize]->SetPosition(AVector3(x * funcGridSize, y - 20.0f, z * funcGridSize) * pos_scalar);
+            graph[x + sampleSize][z + sampleSize]->SetColor(
+                getClr(x,y,z)
+            );
+        }
+    }
 
-	std::cout << "Meshes constructed \n";
+    //////////////////////////////
 
-	if (easyMethods) {
-		engine->SetupFull("static");
-	}
-	else {
-		engine->setCamera(0.0f, 40.0f, 120.0f);
-		engine->setSunCamera(0.0f, 100.0f, 1.0f);
+    engine->SetupFull("static");
 
-		engine->setupShaders(); //Uses Camera Class and Mesh Instances
+    engine->setBackground(0.0f, 0.0f, 0.0f, 1.0f);
 
-		engine->setupGeometryArrayObjects("static");
-		engine->setupInstanceVBO();
-	}
+    t1 = glfwGetTime();
+    std::cout << "Loading time B: " << t1 - t0 << " seconds \n";
 
-	engine->DEBUG_showCameraVectors();
-	engine->DEBUG_ArrayOrganizers();
+    std::cout << "Printing Instance VBO dimensions: \n";
+    scene->GetInstanceOrganizer().print();
 
-	std::cout << "Shaders created\n";
+    float rot = 0.0f;
+    int frci = 0;
 
-	float _deltaTimeForTIMER = 1.0f / 60.0f;
-	double prevTime = glfwGetTime();
+    //scene->DEBUG_PrintInstanceHierarchy(workspace, 0, 1, true);
 
-	int ROT = 0;
+    while (!engine->windowShouldClose()) {
 
-	//FOR FPS COUNTER
-	double PREV_TIME = 0.0f;
-	int frameCounter = 0;
-	const double FPSsampleTime = 1.0f / 20.0f;
+        AVector3 vec3_1copy = vec3_1.Normalize().Rotate(AVector3(rot * 0.75f, 0.0f, 0.0f)) * vec3_1.Magnitude();
+        AVector3 vec3_2copy = vec3_2.Normalize().Rotate(AVector3(0.0f, 0.0f, rot * 2.0f)) * vec3_2.Magnitude();
+        vec3_add = vec3_1copy + vec3_2copy;
+        vec3_cross = vec3_1copy ^ vec3_2copy;
+        v1.Update(vec3_1copy);
+        v2.Update(vec3_2copy);
+        v3.Update(vec3_add);
+        v4.Update(vec3_cross.Normalize() * 10.0f);
 
-	int cntt = 0;
+        rot += 0.025f;
 
-	Scene->DEBUG_PrintInstanceHierarchy(workspace, 0, 10, false);
+        plane->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3_cross);
 
-	engine->setBackground(0.0f, 0.0f, 0.0f, 1.0f);
+        if (frci % 2 == 0) {
+            for (int x = -sampleSize; x < sampleSize; x++) {
+                for (int z = -sampleSize; z < sampleSize; z++) {
+                    const int y = val[(x + sampleSize + frci) % (sampleSize * 2)][(z + sampleSize + frci) % (sampleSize * 2)];
+                    graph[x + sampleSize][z + sampleSize]->SetPosition(AVector3(x * funcGridSize, y, z * funcGridSize));
+                    graph[x + sampleSize][z + sampleSize]->SetColor(
+                        getClr((x - frci)*8, y + 60, (z + frci)*8)
+                    );
+                }
+            }
+        }
+        frci++;
 
-	// MAIN GAME LOOP
-	while (!engine->windowShouldClose() && !force_exit) {
+        // GAME-LOOP CODE HERE
+        engine->RenderInstances(13);
+    }
 
-		double CURRENT_TIME = glfwGetTime();
-		double timeDifference = CURRENT_TIME - PREV_TIME;
-		frameCounter++;
-		if (timeDifference >= FPSsampleTime) {
-			std::string FPS = std::to_string((1.0f / timeDifference) * frameCounter);
-			std::string msPerFrame = std::to_string((timeDifference / frameCounter) * 1000);
-			std::string winTitle = "WINDOW | " + FPS + " FPS | " + msPerFrame + " ms/frame";
-			engine->setWindowTitle(winTitle);
-			PREV_TIME = CURRENT_TIME;
-			frameCounter = 0;
-		}
+    //scene->DEBUG_PrintInstanceHierarchy(workspace,0,1,true);
 
-		engine->initGameFrame(); // setting up the background color
+    engine->EngineTerminate();
 
-		// TIMER (global) ////////////
-		double currentTime = glfwGetTime();
-		if (currentTime - prevTime >= _deltaTimeForTIMER) {
-			//engine.DEBUG_showCameraVectors();
-			prevTime = currentTime;
-
-			// Sky colors
-			float sinROT = sin((double)ROT / 1024.0f);
-			float cosROT = cos((double)ROT / 1024.0f);
-			engine->getCamera(true).Position = AVector3(10.0f * cosROT, 200.0f * sinROT, 100.0f);
-			ROT += 2;
-
-			if (translations) {
-				float dt = (float)(cntt / 10 % 100);
-				plane->SetPosition(AVector3(dt, -5.0f, 0.0f));
-				plane->SetSize(AVector3(25.0f + dt / 5.0f, 0.5f, 25.0f - dt / 5.0f));
-				firstcube->SetPosition(AVector3(dt / 2.0f, 5.0f, 0.0f));
-
-				std::string tag = "Human 3";
-				auto workspace_sptr = workspace.lock();
-				auto child = workspace_sptr->FirstChild(tag); // Finds first Child with Tag "Human 3"
-
-				if (child) child->SetRotation(AVector3(-90.0f + dt, 0.0f, 0.0f));
-				else std::cout << "Not found: the human 0! \n";
-			}
-
-			cntt++;
-		}
-		if (cntt > 2000) {
-			// Test out dynamic deletions
-			plane->Destroy();
-		}
-
-		if (easyMethods) {
-			engine->RenderInstances(12); // Parameter = timeOfDay (determines SunCamera location)
-		}
-		else {
-			engine->shadowPass();
-			engine->renderPass(45.0f, 0.1f, 1000.0f);
-		}
-	}
-
-	std::cout << " \n\n | -------- CLEANING PROCESS STARTED --------------- | \n\n";
-
-	std::cout << "Game Instance Hierarchy before cleanup! \n";
-
-	Scene->DEBUG_PrintInstanceHierarchy(workspace, 0, 10, true);
-
-	std::cout << "Cleaning up Engine3D... \n";
-
-	Engine3D::EngineTerminate();
-
-	std::cout << "Cleaning process terminated! \n";
-
-	return 0;
+    return 0;
 }

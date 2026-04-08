@@ -23,8 +23,10 @@ void Instance::DelFromUMap(std::shared_ptr<Instance> parent) {
 }
 
 void Instance::Update_Cascade() {
-	this->CalculateWorldVectors();
-	this->Update();
+	if (!UpToDate) {
+		this->CalculateWorldVectors();
+		this->Update();
+	}
 	if (Children.empty()) return;
 	for (auto& ins_uptr : Children) {
 		ins_uptr->Update_Cascade();
@@ -70,7 +72,7 @@ void Instance::CalculateWorldVectors() {
 	std::shared_ptr<Instance> P_ptr = Parent.lock();
 	// Iterate through all ascendents
 	while (P_ptr != nullptr) {
-
+		if (P_ptr->UpToDate) return;
 		// Scale first according to Parent Size
 		this->Position = this->Position * P_ptr->LocalSize;
 		// Rotate according to Parent Rotation (Local) before adding the local vectors
@@ -82,20 +84,24 @@ void Instance::CalculateWorldVectors() {
 		// Multiply Size with local Size
 		this->Size = this->Size * P_ptr->LocalSize;
 		// Advance upwards in the instance hierrarchy
+		P_ptr->UpToDate = true;
 		P_ptr = P_ptr->Parent.lock();
 	}
+	UpToDate = true;
 }
 
 void Instance::SetPosition(AVector3 _Position) {
 	Position = _Position;
 	SetLocalPos();
-	// Update recursively
+	UpToDate = false;
+	// Update children recursively
 	Update_Cascade();
 }
 void Instance::SetRotation(AVector3 _Rotation) {
 	LocalRot = _Rotation;
 	SetLocalPos();
-	// Update recursively
+	UpToDate = false;
+	// Update children recursively
 	Update_Cascade();
 }
 void Instance::SetSize(AVector3 _Size) {
@@ -104,7 +110,8 @@ void Instance::SetSize(AVector3 _Size) {
 	const AVector3& P_size = parent->Size; // (World-Space)
 	LocalSize = AVector3(_Size.x / P_size.x, _Size.y / P_size.y, _Size.z / P_size.z);
 	SetLocalPos();
-	// Update recursively
+	UpToDate = false;
+	// Update children recursively
 	Update_Cascade();
 }
 void Instance::SetColor(AColor3 _Color) {
@@ -180,7 +187,7 @@ void Instance::SetParent(std::weak_ptr<Instance> _Parent) {
 
 	AddToUMap(Parent.lock());
 
-	Update_Cascade();
+	//Update_Cascade();
 }
 
 int Instance::GetBlueprintID() { return Template->GetID(); }
@@ -257,7 +264,7 @@ void Instance::GetAscendants(std::vector<std::shared_ptr<Instance>>& container) 
 
 // -------------- INSTANCE DATA METHODS
 
-void InstanceData::SetMatrix(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center) {
+void InstanceData::SetMatrix(const AVector3& Position, const AVector3& Rotation, const AVector3& Scale, const AVector3& Center) {
 	matrix = glm::translate(glm::mat4(1.0f), (glm::vec3)Position);
 	matrix = glm::rotate(matrix, glm::radians(Rotation.x), glm::vec3(1, 0, 0));
 	matrix = glm::rotate(matrix, glm::radians(Rotation.y), glm::vec3(0, 1, 0));
@@ -269,6 +276,6 @@ void InstanceData::SetColor(AColor3 _RGBA) {
 	RGBA = _RGBA;
 }
 
-InstanceData::InstanceData(AVector3 Position, AVector3 Rotation, AVector3 Scale, AVector3 Center) {
+InstanceData::InstanceData(const AVector3& Position, const AVector3& Rotation, const AVector3& Scale, const AVector3& Center) {
 	SetMatrix(Position, Rotation, Scale, Center);
 }
