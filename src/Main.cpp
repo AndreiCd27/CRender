@@ -53,10 +53,13 @@ public:
         if (this == &dr) {
             return *this;
         }
+        v = scene->CreateInstance(vectB, "Vector");
         vec3 = dr.vec3;
         applyPoint = dr.applyPoint;
-        MyVector copy(vec3, AColor3(0,0,0,255));
-        return copy;
+        v->SetSize(AVector3(vectorWidth, vectorWidth, vec3.Magnitude()));
+        v->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3);
+        v->SetPosition(applyPoint);
+        return *this;
     }
 };
 
