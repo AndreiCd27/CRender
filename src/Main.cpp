@@ -78,7 +78,7 @@ int main() {
     Blueprint* cube = scene->CreateCube(funcGridSize);
     cube->SetColor(0, 255, 0, 255);
 
-    /*
+    
     const int mul = 150 / gridSize;
 
     for (int i = -gridSize; i < gridSize; i++) {
@@ -102,7 +102,7 @@ int main() {
         lineZ->SetColor(
             150, 150 - std::abs(i) * mul, 150 - std::abs(i) * mul, 255);
     }
-    */
+    
 
     double t1 = glfwGetTime();
     std::cout << "Loading time A: " << t1 - t0 << " seconds \n";
