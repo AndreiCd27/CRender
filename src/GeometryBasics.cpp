@@ -80,7 +80,7 @@ AVector3::operator glm::vec3() const {
 }
 
 float AVector3::Magnitude() const {
-	return std::sqrtf(x * x + y * y + z * z);
+	return sqrt(x * x + y * y + z * z);
 }
 
 void AVector3::DEBUG_Print() const {
