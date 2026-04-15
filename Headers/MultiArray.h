@@ -265,7 +265,7 @@ public:
 	UserRef(std::vector<Ref<T>>* _vptr, int _index) : vptr(_vptr), index(_index) {};
 
 	int getIndex() const { return index; }
-	void setIndex(int _index) const { index = _index; }
+	void setIndex(int _index) { index = _index; }
 	Ref<Instance>* getRef() const { 
 		if (vptr == nullptr) return nullptr;
 		return &(vptr->at(index));
