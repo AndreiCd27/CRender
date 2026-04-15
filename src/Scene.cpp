@@ -303,7 +303,7 @@ void Scene::UpdateBatchVectors(std::vector<UserRef<Instance>>& References,
 	auto& insArray = InstanceOrganizer.GetMultiArray();
 	auto& handles = MatrixOrganizer.GetHandles();
 
-	for (size_t i = 0; i < (int)References.size(); ++i) {
+	for (int i = 0; i < (int)References.size(); ++i) {
 		if (References[i] == nullptr) continue;
 
 		int hIdx = References[i].getRef()->HIndex;
@@ -327,7 +327,7 @@ void Scene::UpdateBatchColors(std::vector<UserRef<Instance>>& References, std::v
 	auto& insArray = InstanceOrganizer.GetMultiArray();
 	auto& handles = MatrixOrganizer.GetHandles();
 
-	for (size_t i = 0; i < (int)References.size(); ++i) {
+	for (int i = 0; i < (int)References.size(); ++i) {
 		if (References[i] == nullptr) continue;
 
 		int hIdx = References[i].getRef()->HIndex;

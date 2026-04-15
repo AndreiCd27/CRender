@@ -66,7 +66,7 @@ class Instance : public Transform {
 
 public:
 
-	inline void Update();
+	void Update();
 
 	// --------- CONSTRUCTORS (requires a Blueprint first)
 
