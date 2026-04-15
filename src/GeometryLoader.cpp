@@ -53,7 +53,7 @@ void Blueprint::SetColor(int R, int G, int B, int A) {
 	Center.RGBA = AColor3(R, G, B, A);
 }
 
-int Blueprint::GetID() { return templateID; }
+int Blueprint::GetID() const { return templateID; }
 
 void assignNormal(AVertex& v, glm::vec3 N) {
 	// Add to already existing normal (if to vertex has been assigned a normal before, initial normal = {0.0f})

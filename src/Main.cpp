@@ -6,13 +6,20 @@
 
 const long long int sampleSize = 64; // defines a 2N by 2N area of cubes
 const float funcGridSize = 4.0f;
-const int gridSize = 16;
+const int gridSize = 16; //16
 int f_div = 1; // Divisor for our function values
 float pos_scalar = 0.5f;
 
-int graphFunction3D(int x, int z) {
+int graphFunction3D_t0(int x, int z) {
     //outputs y (UP)
     return (int)(sinf((float)x / 32.0f * glm::pi<float>()) * cosf((float)z / 32.0f * glm::pi<float>()) * 60.0f);
+}
+int graphFunction3D_t1(int x, int z) {
+    //outputs y (UP)
+    return (int)(sinf((float)z*z / 512.0f * glm::pi<float>()) * cosf((float)x*x / 512.0f * glm::pi<float>()) * 60.0f);
+}
+int graphFunction3D(int x, int z, const float t) {
+    return t * graphFunction3D_t0(x, z) + (1 - t) * graphFunction3D_t1(x, z);
 }
 
 const float vectorWidth = 4.0f;
@@ -21,7 +28,7 @@ Engine3D* engine = Engine3D::GetEngine3D();
 auto vectB = scene->CreateUnitVector();
 
 class MyVector {
-    std::shared_ptr<Instance> v = nullptr;
+    UserRef<Instance> v;
     AVector3 vec3 = AVector3(0.0f, 1.0f, 0.0f);
     AVector3 applyPoint = AVector3(0.0f, 0.0f, 0.0f);
 public:
@@ -64,7 +71,34 @@ public:
 };
 
 const AColor3 getClr(const int x, const int y, const int z) {
-    return AColor3((int)((sinf((float)x / 16.0f) + 1.0f)/2.0f * 255.0f), y * 2, (int)((cosf((float)z / 16.0f) + 1.0f)/2.0f * 255.0f), 255);
+    //return AColor3((int)((sinf((float)x / 16.0f) + 1.0f)/2.0f * 255.0f), y * 2, (int)((cosf((float)z / 16.0f) + tanf((float)z/16.0f) + 1.0f) / 2.0f * 255.0f), 255);
+    return AColor3(
+        y*4 + 20,
+
+        sinf((float)x / 64.0f * cosf((float)z / 16.0f)) * 
+        cosf((float)z / 64.0f * sinf((float)x / 16.0f)) * 128 + 255, 
+
+        255, 255
+    );
+}
+const AVector3 getClrV(const int x, const int y, const int z, const float t) {
+    //return AColor3((int)((sinf((float)x / 16.0f) + 1.0f)/2.0f * 255.0f), y * 2, (int)((cosf((float)z / 16.0f) + tanf((float)z/16.0f) + 1.0f) / 2.0f * 255.0f), 255);
+    return AVector3(
+        y*4 + 20,
+
+        sinf((float)x / 64.0f * cosf((float)z / 16.0f)) * 
+        cosf((float)z / 64.0f * sinf((float)x / 16.0f)) * 128 + 255, 
+
+        255
+    ) * t + 
+    AVector3(
+        sinf((float)x / 64.0f * cosf((float)z / 16.0f)) *
+        cosf((float)z / 64.0f * sinf((float)x / 16.0f)) * 128 + 255, 
+        
+        y * 4 + 20,
+
+        255
+    ) * (1 - t);
 }
 
 int main() {
@@ -129,15 +163,14 @@ int main() {
 
     // Define our cubes //////////
 
-    int val[sampleSize * 2][sampleSize * 2];
-    std::shared_ptr<Instance> graph[sampleSize * 2][sampleSize * 2];
+    UserRef<Instance> graph[sampleSize * 2][sampleSize * 2];
 
     for (int x = -sampleSize; x < sampleSize; x++) {
         for (int z = -sampleSize; z < sampleSize; z++) {
-            const int y = graphFunction3D(x, z) / f_div;
-            val[x + sampleSize][z + sampleSize] = y;
+            const int y = graphFunction3D(x, z, 0.5f ) / f_div;
+            //val[x + sampleSize][z + sampleSize] = y;
             graph[x + sampleSize][z + sampleSize] = scene->CreateInstance(cube, "t_" + std::to_string(x) + "_" + std::to_string(z));
-            graph[x + sampleSize][z + sampleSize]->SetPosition(AVector3(x * funcGridSize, y - 20.0f, z * funcGridSize) * pos_scalar);
+            graph[x + sampleSize][z + sampleSize]->SetPosition(AVector3(x * funcGridSize, y + 60.0f, z * funcGridSize) * pos_scalar);
             graph[x + sampleSize][z + sampleSize]->SetColor(
                 getClr(x,y,z)
             );
@@ -145,6 +178,9 @@ int main() {
     }
 
     //////////////////////////////
+    engine->DEBUG_ArrayOrganizers();
+    scene->GetInstanceOrganizer().print();
+    scene->GetMatrixOrganizer().print();
 
     engine->SetupFull("static");
 
@@ -161,7 +197,17 @@ int main() {
 
     //scene->DEBUG_PrintInstanceHierarchy(workspace, 0, 1, true);
 
+    struct Measurement {
+        double tset = 0.0f;
+        double tdraw = 0.0f;
+        int tk = 0;
+    } Mt;
+
+    int fsi = 0;
+    int sign = 1;
     while (!engine->windowShouldClose()) {
+
+        double tst = glfwGetTime() * 1000.0f;
 
         AVector3 vec3_1copy = vec3_1.Normalize().Rotate(AVector3(rot * 0.75f, 0.0f, 0.0f)) * vec3_1.Magnitude();
         AVector3 vec3_2copy = vec3_2.Normalize().Rotate(AVector3(0.0f, 0.0f, rot * 2.0f)) * vec3_2.Magnitude();
@@ -176,21 +222,60 @@ int main() {
 
         plane->LookAt(AVector3(0.0f, 0.0f, 0.0f), vec3_cross);
 
-        if (frci % 2 == 0) {
-            for (int x = -sampleSize; x < sampleSize; x++) {
-                for (int z = -sampleSize; z < sampleSize; z++) {
-                    const int y = val[(x + sampleSize + frci) % (sampleSize * 2)][(z + sampleSize + frci) % (sampleSize * 2)];
-                    graph[x + sampleSize][z + sampleSize]->SetPosition(AVector3(x * funcGridSize, y, z * funcGridSize));
-                    graph[x + sampleSize][z + sampleSize]->SetColor(
-                        getClr((x - frci)*8, y + 60, (z + frci)*8)
-                    );
+        for (int x = -sampleSize; x < sampleSize; x++) {
+            for (int z = -sampleSize; z < sampleSize; z++) {
+                const int y = graphFunction3D(
+                    (x + sampleSize + frci) % (sampleSize * 2),
+                    (z + sampleSize + frci) % (sampleSize * 2), 
+                    (float)fsi / 64.0f
+                );
+                graph[x + sampleSize][z + sampleSize]->SetPosition(AVector3(x * funcGridSize, y + 60.0f, z * funcGridSize));
+
+                AVector3 sampleClrV = AVector3(0.0f, 0.0f, 0.0f);
+                for (int xi = -1; xi < 1; xi++) {
+                    for (int zi = -1; zi < 1; zi++) {
+                        const int yi = graphFunction3D(
+                            (x + xi + sampleSize + frci) % (sampleSize * 2),
+                            (z + zi + sampleSize + frci) % (sampleSize * 2),
+                            (float)fsi / 64.0f
+                        );
+                        sampleClrV += getClrV(
+                            (x + xi - frci) * 8, 
+                            yi + 60, (z + zi + frci) * 8,
+                            (float)fsi / 64.0f
+                        );
+                    }
                 }
+                sampleClrV = sampleClrV * (1.0f / 9.0f);
+
+                graph[x + sampleSize][z + sampleSize]->SetColor(
+                    AColor3(sampleClrV.x, sampleClrV.y, sampleClrV.z, 255)
+                    //getClr((x - frci)*8, y + 60, (z + frci)*8)
+                );
             }
         }
         frci++;
+        fsi += sign;
+        if (fsi % 64 == 0) sign = -sign;
+
+        double dt = glfwGetTime() * 1000.0f - tst;
+        Mt.tset += dt;
+
+        tst = glfwGetTime() * 1000.0f;
 
         // GAME-LOOP CODE HERE
-        engine->RenderInstances(13);
+        engine->RenderInstances( 12.0f
+            //(float)fsi / 64.0f * 24.0f  
+        );
+
+        dt = glfwGetTime() * 1000.0f - tst;
+        Mt.tdraw += dt;
+
+        Mt.tk++;
+
+        if (Mt.tk % 256 == 0) {
+            std::cout << "Frame Set Time: " << Mt.tset / (float)Mt.tk << "ms | Draw Time: " << Mt.tdraw / (float)Mt.tk << "ms \n";
+        }
     }
 
     //scene->DEBUG_PrintInstanceHierarchy(workspace,0,1,true);

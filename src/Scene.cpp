@@ -2,18 +2,14 @@
 #include "Scene.h"
 #include <numeric>
 
-std::weak_ptr<const Instance> Scene::GetWorkspace() {
-	return std::weak_ptr<const Instance>(workspace);
-}
-
-void Scene::DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, int depth, int maxdepth, bool details) {
+void Scene::DEBUG_PrintInstanceHierarchy(UserRef<Instance> start, int depth, int maxdepth, bool details) {
 	if (depth <= maxdepth) {
-		std::shared_ptr<const Instance> sptr = start.lock();
+		auto sptr = start;
 		if (sptr == nullptr) return;
 
 		for (int i = 0; i < depth - 1; i++) std::cout << "|  ";
 		if (depth > 0) std::cout << "|__";
-		details ? (std::cout << sptr->GetTag() << " [ EID=" << sptr->GetEID() << " Addr=" << &*sptr << " ] \n") :
+		details ? (std::cout << sptr->GetTag() << " [ EID=" << sptr->GetEID() << " Addr=" << sptr.getRef()->HIndex << "{"<<sptr.getRef()->HOffset<<"} " << " ] \n") :
 			(std::cout << sptr->GetTag() << " \n");
 		if (details) {
 			for (int i = 0; i < depth - 1; i++) std::cout << "|  ";
@@ -32,7 +28,7 @@ void Scene::DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, in
 			std::cout << "\n";
 		}
 		for (auto& c : sptr->Children) {
-			DEBUG_PrintInstanceHierarchy(std::weak_ptr(c), depth + 1, maxdepth, details);
+			DEBUG_PrintInstanceHierarchy(c, depth + 1, maxdepth, details);
 		}
 	}
 }
@@ -45,8 +41,11 @@ Handle Scene::GetBlueprintHandle(Blueprint* BLUEPRINT, int TARGET) {
 }
 */
 
-ArrayOrganizer<InstanceData>& Scene::GetInstanceOrganizer() {
+ArrayOrganizer<Instance>& Scene::GetInstanceOrganizer() {
 	return InstanceOrganizer;
+}
+ArrayOrganizer<InstanceData>& Scene::GetMatrixOrganizer() {
+	return MatrixOrganizer;
 }
 ArrayOrganizer<AVertex>& Scene::GetVBO_Organizer() {
 	return VBO_Organizer;
@@ -68,6 +67,10 @@ const GLuint* Scene::GetEBO_OrganizerPTR(int HandleID) {
 void Scene::GenerateHandle(int HandleID, int TARGET, int capacity) {
 	if (TARGET == INSTANCE_ORGANIZER_TARGET) {
 		InstanceOrganizer.NewHandle(HandleID, capacity);
+		return;
+	}
+	if (TARGET == MATRIX_ORGANIZER_TARGET) {
+		MatrixOrganizer.NewHandle(HandleID, capacity);
 		return;
 	}
 	if (TARGET == VBO_ORGANIZER_TARGET) {
@@ -291,4 +294,51 @@ Blueprint* Scene::CreateUnitVector() {
 	Blueprint* b = CreateBlueprint(v, ind);
 	b->Center = AVertex(0.0f, 0.0f, 0.0f);
 	return b;
+}
+
+void Scene::UpdateBatchVectors(std::vector<UserRef<Instance>>& References,
+	std::vector<AVector3>& Vectors, int VECTOR_TYPE_TARGET) {
+
+	auto& matArray = MatrixOrganizer.GetMultiArray();
+	auto& insArray = InstanceOrganizer.GetMultiArray();
+	auto& handles = MatrixOrganizer.GetHandles();
+
+	for (size_t i = 0; i < (int)References.size(); ++i) {
+		if (References[i] == nullptr) continue;
+
+		int hIdx = References[i].getRef()->HIndex;
+		int offset = References[i].getRef()->HOffset;
+		int absoluteIdx = handles[hIdx].offset + offset;
+
+		InstanceData& data = matArray[absoluteIdx];
+		Instance& ins = insArray[absoluteIdx];
+
+		(VECTOR_TYPE_TARGET == POSITION_TARGET) ? ins.Position = Vectors[i] : (
+			(VECTOR_TYPE_TARGET == ROTATION_TARGET) ? ins.Rotation = Vectors[i] : ins.Size = Vectors[i]
+		);
+
+		ins.SetDataMatrix(data);
+	}
+}
+
+void Scene::UpdateBatchColors(std::vector<UserRef<Instance>>& References, std::vector<AColor3>& Colors) {
+
+	auto& matArray = MatrixOrganizer.GetMultiArray();
+	auto& insArray = InstanceOrganizer.GetMultiArray();
+	auto& handles = MatrixOrganizer.GetHandles();
+
+	for (size_t i = 0; i < (int)References.size(); ++i) {
+		if (References[i] == nullptr) continue;
+
+		int hIdx = References[i].getRef()->HIndex;
+		int offset = References[i].getRef()->HOffset;
+		int absoluteIdx = handles[hIdx].offset + offset;
+
+		InstanceData& data = matArray[absoluteIdx];
+		Instance& ins = insArray[absoluteIdx];
+
+		ins.Color = Colors[i];
+
+		ins.SetDataColor(data);
+	}
 }

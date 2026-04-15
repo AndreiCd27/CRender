@@ -120,7 +120,7 @@ public:
 
 	void DrawAllInstances();
 
-	void RenderInstances(int timeOfDay);
+	void RenderInstances(float timeOfDay);
 	
 	void DEBUG_showCameraVectors();
 	void DEBUG_ArrayOrganizers();

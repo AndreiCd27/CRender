@@ -1,18 +1,15 @@
 
 #include "Instance.h"
 
-Instance::Instance(Blueprint* Template, Scene* scene) : Transform(scene, "Instance") {
-	this->Template = Template;
-}
-Instance::Instance(Blueprint* Template, Scene* scene, const std::string& TagName) : Transform(scene, TagName) {
-	this->Template = Template;
-}
+Instance::Instance() : Transform(nullptr, "null") {}
+Instance::Instance(const Blueprint* _Template, Scene* scene) : Transform(scene, "Instance"), Template(_Template) {}
+Instance::Instance(const Blueprint* _Template, Scene* scene, const std::string& TagName) : Transform(scene, TagName), Template(_Template) {}
 
-void Instance::AddToUMap(std::shared_ptr<Instance> parent) {
-	parent->EID_UMap[GetEID()] = shared_from_this();
+void Instance::AddToUMap(UserRef<Instance>& parent) {
+	parent->EID_UMap[GetEID()] = self;
 	parent->Instance_UMap[GetTag()].push_back(GetEID());
 }
-void Instance::DelFromUMap(std::shared_ptr<Instance> parent) {
+void Instance::DelFromUMap(UserRef<Instance>& parent) {
 	if (parent->EID_UMap.find(GetEID()) != parent->EID_UMap.end()) parent->EID_UMap.erase(GetEID());
 
 	auto& vectFromTag = parent->Instance_UMap[GetTag()];
@@ -22,111 +19,7 @@ void Instance::DelFromUMap(std::shared_ptr<Instance> parent) {
 	}
 }
 
-void Instance::Update_Cascade() {
-	if (!UpToDate) {
-		this->CalculateWorldVectors();
-		this->Update();
-	}
-	if (Children.empty()) return;
-	for (auto& ins_uptr : Children) {
-		ins_uptr->Update_Cascade();
-	}
-}
-
-void Instance::SetLocalPos() {
-	std::shared_ptr<Instance> P_ptr = Parent.lock();
-
-	if (P_ptr == nullptr) {
-		LocalPos = Position;
-		return;
-	}
-
-	AVector3 relVec3 = (this->Position - P_ptr->Position);
-
-	AVector3 ParentRot = P_ptr->Rotation * (-1);
-
-	relVec3.Rotate_InPlace(ParentRot);
-
-	relVec3.x /= P_ptr->Size.x;
-	relVec3.y /= P_ptr->Size.y;
-	relVec3.z /= P_ptr->Size.z;
-
-	LocalPos = relVec3;
-}
-
-void Instance::CalculateWorldVectors() {
-	// This function calculates the World-Space Vectors needed for rendering from ascendants
-	// 
-	// Through functions like SetPosition(), SetRotation(), SetSize()
-	// Users can modify an Instance with all descendants moved relative to it,
-	// Moving from child -> parent
-	// 
-	// At first, World-Space Vectors are set to the Local-Space Vectors
-	// Then, all Local-Space Vectors from their parents are added (and rotated accordingly)
-
-	// Reset Position & Rotation & Scale
-	this->Position = this->LocalPos;
-	this->Rotation = this->LocalRot;
-	this->Size = this->LocalSize;
-	// Add Parent LocalVectors
-	std::shared_ptr<Instance> P_ptr = Parent.lock();
-	// Iterate through all ascendents
-	while (P_ptr != nullptr) {
-		if (P_ptr->UpToDate) return;
-		// Scale first according to Parent Size
-		this->Position = this->Position * P_ptr->LocalSize;
-		// Rotate according to Parent Rotation (Local) before adding the local vectors
-		this->Position.Rotate_InPlace(P_ptr->Rotation);
-		// Add the local Rotation from the paren
-		this->Rotation += P_ptr->LocalRot;
-		// Add the local Position from the parent
-		this->Position += P_ptr->LocalPos;
-		// Multiply Size with local Size
-		this->Size = this->Size * P_ptr->LocalSize;
-		// Advance upwards in the instance hierrarchy
-		P_ptr->UpToDate = true;
-		P_ptr = P_ptr->Parent.lock();
-	}
-	UpToDate = true;
-}
-
-void Instance::SetPosition(AVector3 _Position) {
-	Position = _Position;
-	SetLocalPos();
-	UpToDate = false;
-	// Update children recursively
-	Update_Cascade();
-}
-void Instance::SetRotation(AVector3 _Rotation) {
-	LocalRot = _Rotation;
-	SetLocalPos();
-	UpToDate = false;
-	// Update children recursively
-	Update_Cascade();
-}
-void Instance::SetSize(AVector3 _Size) {
-	auto parent = Parent.lock();
-	if (parent == nullptr) return;
-	const AVector3& P_size = parent->Size; // (World-Space)
-	LocalSize = AVector3(_Size.x / P_size.x, _Size.y / P_size.y, _Size.z / P_size.z);
-	SetLocalPos();
-	UpToDate = false;
-	// Update children recursively
-	Update_Cascade();
-}
-void Instance::SetColor(AColor3 _Color) {
-	Color = _Color;
-	Update();
-}
-void Instance::SetColor(int R, int G, int B, int A) {
-	Color = AColor3(R, G, B, A);
-	Update();
-}
-void Instance::SetTile(Tile* _tile) {
-	tile = _tile;
-}
-
-const float oneOverPI = 1.0f / 3.14159f;
+constexpr float oneOverPI = 1.0f / 3.14159f;
 
 void Instance::LookAt(AVector3 from, AVector3 to) {
 	AVector3 d = (to - from);
@@ -150,34 +43,38 @@ void Instance::SetDirection(AVector3 Direction) {
 	angles = 180.0f * oneOverPI * angles;
 
 	Rotation = AVector3(angles.x, angles.y, angles.z);
-	LocalRot = AVector3(angles.x, angles.y, angles.z);
+	//LocalRot = AVector3(angles.x, angles.y, angles.z);
+
+	UpToDate = false;
+	//Update();
 }
 
-void Instance::AddChild(std::shared_ptr<Instance> Ins) {
+void Instance::AddChild(UserRef<Instance>& Ins) {
 	// Check if child already is in Children vector
 	auto iterator = std::find(Children.begin(), Children.end(), Ins);
 	if (iterator == Children.end()) {
 		Children.push_back(Ins);
 	}
 }
-void Instance::RemoveChild(std::shared_ptr<Instance> Ins) {
+void Instance::RemoveChild(UserRef<Instance>& Ins) {
 	// Check if child already is in Children vector
 	auto iterator = std::find(Children.begin(), Children.end(), Ins);
 	if (iterator != Children.end()) {
 		Children.erase(iterator);
 	}
 }
-void Instance::SetParent(std::weak_ptr<Instance> _Parent) {
-	if (_Parent.lock() == nullptr) throw InstanceException("Parent No Longer Exists", 1);
+void Instance::SetParent(UserRef<Instance>& _Parent) {
+	if (self.getRef() == nullptr) return;
+	//if (_Parent.Organizer == nullptr) throw InstanceException("Parent No Longer Exists", 1);
 	// Check if this instance already has a parent
-	if (Parent.lock() != nullptr) {
-		DelFromUMap(Parent.lock());
-		Parent.lock()->RemoveChild(shared_from_this());
+	if (Parent.getRef() != nullptr) {
+		DelFromUMap(Parent);
+		Parent->RemoveChild(self);
 	}
 	
 	Parent = _Parent;
 
-	Parent.lock()->AddChild(shared_from_this());
+	Parent->AddChild(self);
 
 	SetLocalPos();
 
@@ -185,7 +82,7 @@ void Instance::SetParent(std::weak_ptr<Instance> _Parent) {
 	SetRotation(LocalRot);
 	SetSize(LocalSize);
 
-	AddToUMap(Parent.lock());
+	AddToUMap(Parent);
 
 	//Update_Cascade();
 }
@@ -196,20 +93,18 @@ AVector3 Instance::GetPosition() { return Position; }
 AVector3 Instance::GetRotation() { return Rotation; }
 AVector3 Instance::GetSize() { return Size; }
 
-void Instance::SetHandleOffset(int offset) { handleOffset = offset; }
-
 // ----------- GET CHILD METHODS
 
-std::shared_ptr<Instance> Instance::FirstChild(const std::string& _TagName) const {
+UserRef<Instance> Instance::FirstChild(const std::string& _TagName) const {
 	auto iterator = Instance_UMap.find(_TagName);
-	if (iterator == Instance_UMap.end()) return nullptr;
+	if (iterator == Instance_UMap.end()) return UserRef<Instance>();
 	// TagName was found in UMap, extract first EntityID
 	return FirstChild(
 		iterator->second.back() // the first EID from the vector<int> (second attribute of iterator)
 	);
 }
 
-std::shared_ptr<Instance> Instance::FirstChild(int EntityID) const {
+UserRef<Instance> Instance::FirstChild(int EntityID) const {
 	auto EID_iter = EID_UMap.find( EntityID );
 	// Last check if it exists in EID_UMap
 	if (EID_iter == EID_UMap.end()) {
@@ -220,7 +115,7 @@ std::shared_ptr<Instance> Instance::FirstChild(int EntityID) const {
 	return EID_iter->second;
 }
 
-const std::vector<std::shared_ptr<Instance>>& Instance::GetChildren() { return Children; }
+std::vector< UserRef<Instance> >& Instance::GetChildren() { return Children; }
 
 // Using std::copy_if
 // Example:  (from cppreference)
@@ -229,15 +124,15 @@ const std::vector<std::shared_ptr<Instance>>& Instance::GetChildren() { return C
 				 std::back_inserter(to_vector),
 				 [](int x) { return x % 3 == 0; });
 */
-std::vector<std::shared_ptr<Instance>> Instance::AllChildrenWith(const std::string& _TagName) {
-	std::vector<std::shared_ptr<Instance>> Instance_PTRs;
+std::vector< UserRef<Instance> > Instance::AllChildrenWith(const std::string& _TagName) {
+	std::vector< UserRef<Instance> > Instance_PTRs;
 	std::copy_if(Children.begin(), Children.end(), std::back_inserter(Instance_PTRs),
-		[_TagName](const std::shared_ptr<Instance>& c) { return c->GetTag() == _TagName; }
+		[_TagName](const UserRef<Instance>& c) { return c->GetTag() == _TagName; }
 	);  // ^-- "capture list" - here we put variables we need inside function ---^
 	return Instance_PTRs;
 }
 
-void Instance::GetDescendants(std::vector<std::shared_ptr<Instance>>& container) {
+void Instance::GetDescendants(std::vector< UserRef<Instance> >& container) {
 	if (Children.empty()) return;
 	for (auto& c : Children) {
 		container.push_back(c);
@@ -247,23 +142,18 @@ void Instance::GetDescendants(std::vector<std::shared_ptr<Instance>>& container)
 
 // ------------- GET PARENT METHODS
 
-std::shared_ptr<Instance> Instance::GetParent() {
-
-	std::shared_ptr<Instance> P_ptr = Parent.lock();
-
-	//if (P_ptr == nullptr) { throw InstanceException("Parent does not exist",1); return nullptr; }
-
-	return P_ptr;
+UserRef<Instance>& Instance::GetParent() {
+	return Parent;
 }
 
-void Instance::GetAscendants(std::vector<std::shared_ptr<Instance>>& container) {
-	if (Parent.lock()==nullptr) return;
-	container.push_back(Parent.lock());
+void Instance::GetAscendants(std::vector< UserRef<Instance> >& container) {
+	if (Parent.getRef() == nullptr) return;
+	container.push_back(Parent);
 	GetAscendants(container);
 }
 
 // -------------- INSTANCE DATA METHODS
-
+/*
 void InstanceData::SetMatrix(const AVector3& Position, const AVector3& Rotation, const AVector3& Scale, const AVector3& Center) {
 	matrix = glm::translate(glm::mat4(1.0f), (glm::vec3)Position);
 	matrix = glm::rotate(matrix, glm::radians(Rotation.x), glm::vec3(1, 0, 0));
@@ -279,3 +169,4 @@ void InstanceData::SetColor(AColor3 _RGBA) {
 InstanceData::InstanceData(const AVector3& Position, const AVector3& Rotation, const AVector3& Scale, const AVector3& Center) {
 	SetMatrix(Position, Rotation, Scale, Center);
 }
+*/

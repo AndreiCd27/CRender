@@ -220,5 +220,69 @@ public:
 		if (ID_TO_INDEX.find(HandleID) == ID_TO_INDEX.end()) return -1;
 		return ID_TO_INDEX[HandleID];
 	}
+	Handle& GetHandleFromIndex(int HandleIndex) {
+		return Handles[HandleIndex];
+	}
+	const std::vector<Handle>& GetHandles() {
+		return Handles;
+	}
+};
 
+class Scene;
+template <typename T>
+class Ref {
+	ArrayOrganizer<T>* Organizer = nullptr;
+	std::vector<T>* pool = nullptr;
+	int HIndex = -1;
+	int HOffset = -1;
+public:
+	Ref() = default;
+	Ref(ArrayOrganizer<T>* _Organizer, int _HIndex, int _HOffset) : Organizer(_Organizer), HIndex(_HIndex), HOffset(_HOffset) {};
+	T* operator->() const {
+		if (HIndex == -1) return _Access();
+		return &Organizer->GetMultiArray()[Organizer->GetHandleFromIndex(HIndex).offset + HOffset];
+	}
+	T* _Access() const {
+		if (pool == nullptr) throw ArrayOrganizerException("Template not found; Invalid Reference", 9);
+		return &pool->at(HOffset);
+	}
+	bool operator==(const Ref& other) const {
+		return HIndex == other.HIndex && HOffset == other.HOffset;
+	}
+	bool operator==(std::nullptr_t) const {
+		return HIndex == -1;
+	}
+	friend class Scene;
+	friend class Instance;
+};
+
+template <typename T>
+class UserRef {
+	std::vector<Ref<T>>* vptr = nullptr;
+	int index = -1;
+public:
+	UserRef() = default;
+	UserRef(std::vector<Ref<T>>* _vptr, int _index) : vptr(_vptr), index(_index) {};
+
+	int getIndex() const { return index; }
+	void setIndex(int _index) const { index = _index; }
+	Ref<Instance>* getRef() const { 
+		if (vptr == nullptr) return nullptr;
+		return &(vptr->at(index));
+	}
+	Ref<Instance>& getRef_Direct() const {
+		return vptr->at(index);
+	}
+
+	T* operator->() const {
+		if (vptr == nullptr) return nullptr;
+		return vptr->at(index).operator->();
+	}
+
+	bool operator==(const UserRef& other) const {
+		return index == other.getIndex();
+	}
+	bool operator==(std::nullptr_t) const {
+		return vptr == nullptr;
+	}
 };

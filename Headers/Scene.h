@@ -12,21 +12,24 @@
 #define INSTANCE_ORGANIZER_TARGET 0
 #define VBO_ORGANIZER_TARGET 1
 #define EBO_ORGANIZER_TARGET 2
+#define MATRIX_ORGANIZER_TARGET 3
 
-#define ShrInstances std::vector<std::shared_ptr<Instance>>
+#define POSITION_TARGET 5
+#define ROTATION_TARGET 6
+#define SIZE_TARGET 7
 
 class Tile;
 
 class InstancePool {
 public:
-	ShrInstances Elements;
+	std::vector<Instance> Elements;
 
 	std::vector<unsigned int> cBitsX;
 	std::vector<unsigned int> cBitsZ;
 
-	std::unordered_map<int, ShrInstances> HandleID_UMap;
+	std::vector<std::pair<int,int>> HandleID_UMap;
 
-	ShrInstances ToUpdate;
+	//std::vector<Ref<Instance>> ToUpdate;
 
 	friend class Instance;
 };
@@ -43,7 +46,9 @@ class Scene {
 private:
 
 	// Handles are generated for every Blueprint and for every Tile
-	ArrayOrganizer<InstanceData> InstanceOrganizer;
+	ArrayOrganizer<InstanceData> MatrixOrganizer;
+	//
+	ArrayOrganizer<Instance> InstanceOrganizer;
 
 	// Handles are generated for every Tile
 	ArrayOrganizer<AVertex> VBO_Organizer;
@@ -51,6 +56,8 @@ private:
 
 	// Clasify Blueprints
 	std::vector<Blueprint*> Blueprints;
+
+	std::vector<Ref<Instance>> Refrences;
 
 	std::unordered_map<std::string, int> Alias_TO_ID;
 	std::unordered_map<int, Blueprint*> ID_TO_Blueprint;
@@ -69,7 +76,7 @@ public:
 
 	Tile* WorldRoot = nullptr;
 
-	std::shared_ptr<Instance> workspace = nullptr;
+	//Ref<Instance> workspace = Ref<Instance>(nullptr, -1, -1);
 
 	Scene();
 	~Scene();
@@ -85,9 +92,10 @@ public:
 	Tile* FindTileForPosition(const AVertex& center, AVector3 Position);
 
 	Blueprint* CreateBlueprint(std::vector<AVertex>& vertices, std::vector<GLuint>& indicies);
-	std::shared_ptr<Instance> CreateInstance(Blueprint* temp, const std::string& name);
+	const UserRef<Instance> CreateInstance(const Blueprint* temp, const std::string& name);
 
-	ArrayOrganizer<InstanceData>& GetInstanceOrganizer();
+	ArrayOrganizer<Instance>& GetInstanceOrganizer();
+	ArrayOrganizer<InstanceData>& GetMatrixOrganizer();
 	ArrayOrganizer<AVertex>& GetVBO_Organizer();
 	ArrayOrganizer<GLuint>& GetEBO_Organizer();
 
@@ -98,11 +106,9 @@ public:
 	const GLuint* GetEBO_OrganizerPTR(int HandleID);
 	*/
 
-	std::weak_ptr<const Instance> GetWorkspace();
-
 	void GenerateHandle(int HandleID, int TARGET, int capacity);
 
-	void DEBUG_PrintInstanceHierarchy(std::weak_ptr<const Instance> start, int depth, int maxdepth, bool details);
+	void DEBUG_PrintInstanceHierarchy(UserRef<Instance> start, int depth, int maxdepth, bool details);
 
 	Blueprint* LoadSTLGeomFile(const char* filePath, float scale);
 
@@ -113,4 +119,9 @@ public:
 	Blueprint* CreateUnitVector();
 
 	friend void Instance::Update();
+
+	void UpdateBatchVectors(std::vector<UserRef<Instance>>& References, 
+		std::vector<AVector3>& Vectors, int VECTOR_TYPE_TARGET);
+
+	void UpdateBatchColors(std::vector<UserRef<Instance>>& References, std::vector<AColor3>& Colors);
 };

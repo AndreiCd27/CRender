@@ -43,7 +43,7 @@ class Blueprint {
 
 public:
 
-	int GetID();
+	int GetID() const;
 
 	AVertex Center;
 	static int GetShiftComponent();

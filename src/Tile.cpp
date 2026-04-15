@@ -12,7 +12,7 @@ Scene::Scene() {
 	WorldRoot = new Tile(nullptr, 0, 0, START_TILE_LEVEL);
 	std::vector<AVertex> emptyv;
 	std::vector<GLuint> emptyi;
-	workspace = std::make_shared<Instance>(CreateBlueprint(emptyv, emptyi), this, "WORKSPACE");
+	//workspace = CreateInstance(CreateBlueprint(emptyv, emptyi), "WORKSPACE");
 }
 Scene::~Scene() {
 	if (WorldRoot != nullptr) delete WorldRoot;
@@ -66,28 +66,36 @@ Tile* Scene::FindTileForPosition(const AVertex& center, AVector3 Position) {
 	return tile;
 }
 
-std::shared_ptr<Instance> Scene::CreateInstance(Blueprint* temp, const std::string& name) {
-	std::shared_ptr<Instance> newInst = std::make_shared<Instance>(temp, this, name);
-	AVertex& center = temp->Center;
-	newInst->SetColor(center.RGBA);
+const UserRef<Instance> Scene::CreateInstance(const Blueprint* temp, const std::string& name) {
+	Instance newInst(temp, this, name);
+	const AVertex& center = temp->Center;
+	newInst.Color = center.RGBA;
+	newInst.Center = center.POS;
 
-	newInst->SetParent(workspace);
+	//newInst.SetParent(workspace);
 
-	newInst->tile = WorldRoot;
+	newInst.tile = WorldRoot;
+
+	Ref<Instance> ref(&InstanceOrganizer, -1, pool.Elements.size());
+	ref.pool = &pool.Elements;
+
+	newInst.self = UserRef(&Refrences, (int)Refrences.size());
+	Refrences.push_back(ref);
 
 	pool.Elements.push_back(newInst);
 	pool.cBitsX.push_back(0);
 	pool.cBitsZ.push_back(0);
 
-	return newInst;
+	UserRef<Instance> uref(pool.Elements.back().self);
+
+	return uref;
 }
 
 void Scene::AssignTilesToInstances() {
 	for (int i = 0; i < (int)pool.Elements.size(); i++) {
-		const auto& ins_shr_ptr = pool.Elements[i];
-		AVector3& centerPOS = ins_shr_ptr->Template->Center.POS;
-		double cxd = (double)centerPOS.x + ins_shr_ptr->Position.x;
-		double czd = (double)centerPOS.z + ins_shr_ptr->Position.z;
+		const auto& ins = pool.Elements[i];
+		double cxd = (double)ins.Center.x + ins.Position.x;
+		double czd = (double)ins.Center.z + ins.Position.z;
 		pool.cBitsX[i] = getCBits(cxd);
 		pool.cBitsZ[i] = getCBits(czd);
 	}
@@ -98,52 +106,92 @@ void Scene::AssignTilesToInstances() {
 
 	while (lvl < MAX_TILE_LEVEL) {
 		for (int i = 0; i < (int)pool.Elements.size(); i++) {
-			const auto& ins_shr_ptr = pool.Elements[i];
+			auto& ins= pool.Elements[i];
 			short int bitX = (pool.cBitsX[i] & bin) >> (32 - lvl);
 			short int bitZ = (pool.cBitsZ[i] & bin) >> (32 - lvl);
 
-			ins_shr_ptr->tile = ins_shr_ptr->tile->Divisions[bitX][bitZ];
+			ins.tile = ins.tile->Divisions[bitX][bitZ];
 		}
 		lvl++;
 		bin = bin >> 1;
 	}
 	for (int i = 0; i < (int)pool.Elements.size(); i++) {
-		const auto& ins_shr_ptr = pool.Elements[i];
-		int handleID = ins_shr_ptr->Template->GetID() | (ins_shr_ptr->tile->GetTileID() << Tile::shiftComponent);
-		pool.HandleID_UMap[handleID].push_back(ins_shr_ptr);
+		const auto& ins = pool.Elements[i];
+		int handleID = ins.Template->GetID() | (ins.tile->GetTileID() << Tile::shiftComponent);
+		pool.HandleID_UMap.push_back(
+			std::pair<int, int>(handleID, i)
+		);
 	}
+	std::sort(pool.HandleID_UMap.begin(), pool.HandleID_UMap.end());
 }
 
 void Scene::ExecuteInstancePool() {
 
-	ArrayOrganizer<InstanceData>& insArrayOrg = GetInstanceOrganizer();
+	ArrayOrganizer<Instance>& insArrayOrg = GetInstanceOrganizer();
+	ArrayOrganizer<InstanceData>& matArrayOrg = GetMatrixOrganizer();
 
 	if (!pool.Elements.empty()) {
 
 		AssignTilesToInstances();
 
-		for (auto& p : pool.HandleID_UMap) {
+		if (pool.HandleID_UMap.empty()) return;
+
+		int poolSize = (int)pool.HandleID_UMap.size();
+		auto prevPair = pool.HandleID_UMap[0];
+		auto p = pool.HandleID_UMap[0];
+		for (int i = 0; i < (int)pool.HandleID_UMap.size(); ) {
+			int j = i;
+			while (j < poolSize && pool.HandleID_UMap[j].first == pool.HandleID_UMap[i].first) {
+				p = pool.HandleID_UMap[j];
+				j++;
+			}
+			int capacity = j - i;
+
 			int HandleIndex = insArrayOrg.GetHandleIndex(p.first);
 			int HandlePrevSize = 0;
 			if (HandleIndex == -1) {
 				// inline GenerateHandle
 				// inline PushHandleID
-				GenerateHandle(p.first, INSTANCE_ORGANIZER_TARGET, (int)p.second.size());
+				GenerateHandle(p.first, INSTANCE_ORGANIZER_TARGET, capacity);
+				GenerateHandle(p.first, MATRIX_ORGANIZER_TARGET, capacity);
 				HandleIndex = insArrayOrg.GetHandleIndex(p.first);
+				HandleIndex = matArrayOrg.GetHandleIndex(p.first);
 				// -----------^ insert into this tile that has tileID contained in HandleID
 			}
 			else {
-				insArrayOrg.Reserve(HandleIndex, (int)p.second.size());
+				insArrayOrg.Reserve(HandleIndex, capacity);
+				matArrayOrg.Reserve(HandleIndex, capacity);
 			}
-			HandlePrevSize = insArrayOrg.incHandleSize(HandleIndex, (int)p.second.size());
-			p.second[0]->tile->PushHandleID(p.first, insArrayOrg);
+			HandlePrevSize = insArrayOrg.incHandleSize(HandleIndex, capacity);
+			HandlePrevSize = matArrayOrg.incHandleSize(HandleIndex, capacity);
+			pool.Elements[prevPair.second].tile->PushHandleID(p.first, matArrayOrg);
 			//std::cout << "HandleID = " << p.first << "\n";
-			for (int i = 0; i < (int)p.second.size(); i++) {
-				auto& ins_shr_ptr = p.second[i];
-				ins_shr_ptr->handleID = p.first;
-				ins_shr_ptr->handleOffset = HandlePrevSize + i;
+			//std::cout << "Batch from index " << i << " to index " << j << "\n";
+			for (int k = i; k < j; k++) {
+				int originalIndex = pool.HandleID_UMap[k].second;
+				auto& ins = pool.Elements[originalIndex];
+				const auto& userRef = ins.self;
+				auto& ref = userRef.getRef_Direct();
+				ref.Organizer = &insArrayOrg;
+				ref.pool = nullptr;
+				ref.HIndex = HandleIndex;
+				ref.HOffset = HandlePrevSize + k - i;
+
+				userRef->self = userRef;
+				userRef->Color = ins.Color;
+				userRef->Template = ins.Template;
+				userRef->ParentScene = ins.ParentScene;
+				userRef->Position = ins.Position;
+				userRef->Rotation = ins.Rotation;
+				userRef->Size = ins.Size;
+				userRef->Parent = ins.Parent;
+				
+				//std::cout << "Instance | HandleIndex = " << ptr->HIndex << ", HandleOffset = " << ptr->HOffset<<"\n";
 				//std::cout << ins_shr_ptr->GetTag() << "\n";
 			}
+
+			prevPair = p;
+			i = j;
 		}
 
 		pool.Elements.clear();
@@ -152,24 +200,35 @@ void Scene::ExecuteInstancePool() {
 		pool.HandleID_UMap.clear();
 	}
 
-	if (pool.ToUpdate.empty()) return;
-
-	std::vector<InstanceData>& insArray = insArrayOrg.GetMultiArray();
-	for (auto& ins_shr_ptr : pool.ToUpdate) {
-		if (ins_shr_ptr->handleID != -1) {
-			const Handle& h = insArrayOrg.GetHandleData(ins_shr_ptr->handleID);
-			InstanceData& insData = insArray[h.offset + ins_shr_ptr->handleOffset];
-			insData.SetMatrix(ins_shr_ptr->Position, ins_shr_ptr->Rotation,
-					ins_shr_ptr->Size, ins_shr_ptr->Template->Center.POS);
-			insData.SetColor(ins_shr_ptr->Color);
-			ins_shr_ptr->UpToDate = true;
-			//std::cout << "Updated: " << ins_shr_ptr->GetTag() << "\n";
-		}
-		else {
-			std::cout << "No Handle found! \n";
+	std::vector<Instance>& insArray = insArrayOrg.GetMultiArray();
+	std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArray();
+	for (int i = 0; i < (int)insArray.size(); i++) {
+		auto& ins = insArray[i];
+		auto& data = matArray[i];
+		if (!ins.UpToDate) {
+			ins.SetDataMatrix(data);
+			ins.SetDataColor(data);
+			ins.UpToDate = true;
 		}
 	}
+
+	/*
+	if (pool.ToUpdate.empty()) return;
+
+	//std::vector<Instance>& insArray = insArrayOrg.GetMultiArray();
+	//std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArray();
+	for (int i = 0; i < (int)pool.ToUpdate.size(); i++) {
+		const auto& insRef = pool.ToUpdate[i];
+		Ref<InstanceData> Data = Ref<InstanceData>(&matArrayOrg, 
+			insRef.HIndex, insRef.HOffset
+		);
+		insRef->SetDataMatrix(Data);
+		insRef->SetDataColor(Data);
+		insRef->UpToDate = true;
+	}
 	pool.ToUpdate.clear();
+	*/
+	
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -255,7 +314,18 @@ void Tile::RecurseInTilesOutputHandleIDs(std::vector<int>& HandleIDs) {
 
 void Instance::Update() {
 	UpToDate = false;
-	ParentScene->pool.ToUpdate.push_back(shared_from_this());
+	//ParentScene->pool.ToUpdate.push_back(*self.getInternalPtr());
+	
+	const auto& ref = self.getRef_Direct();
+
+	if (ref.HIndex == -1) return;
+
+	auto& matArrOrg = ParentScene->GetMatrixOrganizer();
+	Ref<InstanceData> dataRef{ &matArrOrg, ref.HIndex, ref.HOffset };
+
+	SetDataMatrix(dataRef);
+	SetDataColor(dataRef);
+	
 }
 void Instance::Destroy() {
 
@@ -270,8 +340,7 @@ void Instance::Destroy() {
 
 	// shared_from_this() works like a self reference but shared_ptr
 	// Delete from parent lsist
-	std::shared_ptr<Instance> P_ptr = Parent.lock();
-	if (P_ptr != nullptr) P_ptr->RemoveChild(shared_from_this());
+	if (Parent != nullptr) Parent->RemoveChild(self);
 
 	Children.clear(); // Delete all shared pointers
 

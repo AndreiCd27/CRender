@@ -50,6 +50,10 @@ void Engine3D::DEBUG_ArrayOrganizers() {
 	std::cout << "EBO Size: " << getScene()->GetEBO_Organizer().GetMultiArray().size() << "\n";
 	std::cout << "Printing InstanceOrganizer... \n";
 	getScene()->GetInstanceOrganizer().print();
+
+	std::cout << "Matrices Size: " << getScene()->GetMatrixOrganizer().GetMultiArray().size() << "\n";
+	std::cout << "Printing MatrixOrganizer... \n";
+	getScene()->GetMatrixOrganizer().print();
 }
 
 int Engine3D::setupWindow(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const char * WINDOW_TITLE) {
@@ -141,7 +145,7 @@ void Engine3D::setupInstanceVBO() {
 	// We need a new relative translation matrix every frame for every instance,
 	// Even though our camera view and proj matrix stay the same for every instance
 
-	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size();
+	int matarraysize = (int)MainScene.GetMatrixOrganizer().GetMultiArray().size();
 
 	glBufferData(GL_ARRAY_BUFFER, matarraysize * sizeof(InstanceData), NULL, GL_DYNAMIC_DRAW);
 
@@ -190,7 +194,7 @@ void Engine3D::DrawInstances(Blueprint* BLUEPRINT, const Tile* TILE) {
 	try {
 
 		int HandleID = BLUEPRINT->GetID() | (TILE->GetTileID() << Tile::shiftComponent);
-		Handle InstancesHandle = MainScene.GetInstanceOrganizer().GetHandleData(HandleID);
+		Handle InstancesHandle = MainScene.GetMatrixOrganizer().GetHandleData(HandleID);
 
 		Handle BlueprintHandle = MainScene.GetBlueprintHandle(BLUEPRINT, EBO_ORGANIZER_TARGET);
 
@@ -240,7 +244,7 @@ void Engine3D::DrawAllInstances() {
 	for (int i = 0; i < (int)handleIDsFromRoot.size(); i++) {
 		int HandleID = handleIDsFromRoot[i];
 
-		Handle InstH = MainScene.GetInstanceOrganizer().GetHandleData(HandleID);
+		Handle InstH = MainScene.GetMatrixOrganizer().GetHandleData(HandleID);
 
 		Handle BlueprintHandle = MainScene.GetEBO_Organizer().GetHandleData(HandleID & 4095);
 
@@ -282,10 +286,10 @@ void Engine3D::shadowPassInstanceShader() {
 	shadowProgram.Activate();
 	VAO_1.Bind();
 
-	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size() * sizeof(InstanceData);
+	int matarraysize = (int)MainScene.GetMatrixOrganizer().GetMultiArray().size() * sizeof(InstanceData);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetMatrixOrganizer().GetMultiArray()[0]);
 
 	// The sun looks from the UserCamera's position, so the shadowsMap doesn't stay forever at (0,0,0)
 	SunCamera.LightMatrix(500.0f, shadowProgram, false, UserCamera.Position);
@@ -300,10 +304,10 @@ void Engine3D::renderPassInstanceShader() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
 
-	int matarraysize = (int)MainScene.GetInstanceOrganizer().GetMultiArray().size() * sizeof(InstanceData);
+	int matarraysize = (int)MainScene.GetMatrixOrganizer().GetMultiArray().size() * sizeof(InstanceData);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetInstanceOrganizer().GetMultiArray()[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetMatrixOrganizer().GetMultiArray()[0]);
 
 	DrawAllInstances();
 }
@@ -352,8 +356,8 @@ void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
 	glfwPollEvents();
 }
 
-void Engine3D::RenderInstances(int timeOfDay) {
-	double ROT = (timeOfDay - 12) / 12.0f * glm::pi<double>();
+void Engine3D::RenderInstances(float timeOfDay) {
+	double ROT = (timeOfDay - 12.0f) / 12.0f * glm::pi<double>();
 	float sinROT = sin(ROT);
 	float cosROT = cos(ROT);
 	SunCamera.Position = AVector3(100.0f * sinROT, 100.0f * cosROT, 50.0f);
