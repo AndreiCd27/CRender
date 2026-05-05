@@ -75,6 +75,10 @@ void AVector3::Rotate_InPlace(const AVector3& ROT) {
 	*this = quatX * quatY * quatZ * (glm::vec3)*this;
 }
 
+float AVector3::Dot(const AVector3 v) const {
+	return x * v.x + y * v.y + z * v.z;
+}
+
 AVector3::operator glm::vec3() const {
 	return glm::vec3(x, y, z);
 }

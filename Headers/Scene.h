@@ -118,6 +118,13 @@ public:
 
 	Blueprint* CreateUnitVector();
 
+	int GetBlueprintVerticesHandleID(int blueprintID) {
+		return Blueprints[blueprintID]->VerticesHandleID;
+	}
+	int GetBlueprintIndiciesHandleID(int blueprintID) {
+		return Blueprints[blueprintID]->IndiciesHandleID;
+	}
+
 	friend void Instance::Update();
 
 	void UpdateBatchVectors(std::vector<UserRef<Instance>>& References, 

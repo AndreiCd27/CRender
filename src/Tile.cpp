@@ -1,6 +1,8 @@
 
 #include "Tile.h"
 
+#include <execution>
+
 /////////////////////////////////////////////////////////////////////
 // 
 // Some functions from class SCENE had to be defined inside Tile.cpp
@@ -200,9 +202,15 @@ void Scene::ExecuteInstancePool() {
 		pool.HandleID_UMap.clear();
 	}
 
+
 	std::vector<Instance>& insArray = insArrayOrg.GetMultiArray();
 	std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArray();
-	for (int i = 0; i < (int)insArray.size(); i++) {
+
+	// Creăm un vector de indecși pentru a itera în paralel
+	std::vector<int> indices(insArray.size());
+	std::iota(indices.begin(), indices.end(), 0);
+
+	std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](int i) {
 		auto& ins = insArray[i];
 		auto& data = matArray[i];
 		if (!ins.UpToDate) {
@@ -210,24 +218,7 @@ void Scene::ExecuteInstancePool() {
 			ins.SetDataColor(data);
 			ins.UpToDate = true;
 		}
-	}
-
-	/*
-	if (pool.ToUpdate.empty()) return;
-
-	//std::vector<Instance>& insArray = insArrayOrg.GetMultiArray();
-	//std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArray();
-	for (int i = 0; i < (int)pool.ToUpdate.size(); i++) {
-		const auto& insRef = pool.ToUpdate[i];
-		Ref<InstanceData> Data = Ref<InstanceData>(&matArrayOrg, 
-			insRef.HIndex, insRef.HOffset
-		);
-		insRef->SetDataMatrix(Data);
-		insRef->SetDataColor(Data);
-		insRef->UpToDate = true;
-	}
-	pool.ToUpdate.clear();
-	*/
+		});
 	
 }
 

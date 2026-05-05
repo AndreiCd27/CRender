@@ -1,6 +1,7 @@
 #pragma once
 
 #include "shaderClass.h"
+#include "ComputeShader.h"
 #include "Tile.h"
 #include "VBO.h"
 #include "EBO.h"
@@ -8,6 +9,9 @@
 #include "Camera.h"
 #include "Texture.h"
 #include "Window.h"
+#include "EngineConfig.h"
+
+class SHLM;
 
 #define voidcast(x) reinterpret_cast<void*>(x)
 
@@ -57,9 +61,6 @@ private:
 	Engine3D(const Engine3D&) = delete;
 	Engine3D& operator=(const Engine3D&) = delete;
 
-	void shadowPassInstanceShader();
-	void renderPassInstanceShader();
-
 	//FOR FPS COUNTER
 	struct {
 		int frameCounter = 0;
@@ -67,6 +68,8 @@ private:
 		double PREV_TIME = 0.0f;
 		const double FPSsampleTime = 1.0f / 20.0f;
 	}FPS;
+
+	EngineConfig cfg;
 
 public:
 
@@ -112,7 +115,7 @@ public:
 	
 	//OTHERS
 
-	void initGameFrame();
+	void initGameFrame(float timeOfDay);
 
 	void shadowPass();
 
@@ -121,7 +124,11 @@ public:
 	void DrawAllInstances();
 
 	void RenderInstances(float timeOfDay);
-	
+
+	EngineConfig* getCFG() { return &cfg; }
+
 	void DEBUG_showCameraVectors();
 	void DEBUG_ArrayOrganizers();
+
+	friend class SHLM;
 };

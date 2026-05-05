@@ -5,7 +5,7 @@ bool Window::CreateWindow(int WINDOW_WIDTH, int WINDOW_HEIGHT, const char* WINDO
 	// INITIALIZE GLFW
 	glfwInit();
 	// SOME SPECIFICATIONS FOR OUR OPENGL VERSION THAT WE SEND TO GLFW
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); //
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	//CORE profile from OPENGL; only modern functions
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

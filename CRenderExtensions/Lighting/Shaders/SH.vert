@@ -10,11 +10,9 @@ layout (location = 9) in vec2 instanceUV;
 uniform mat4 perspectiveMatrix;
 uniform vec3 CamPosition;
 
-uniform mat4 lightPerspMatrix;
-
 out vec4 color;
-out vec3 normalVector;
-out vec4 vertexShadowPosition;
+out vec4 vertPos;
+out vec3 vertNormal;
 
 void main()
 {
@@ -22,9 +20,9 @@ void main()
 	vec3 RelPos = WorldPos.xyz - CamPosition;
 	gl_Position = perspectiveMatrix * vec4(RelPos, 1.0);
 
-	vertexShadowPosition = lightPerspMatrix * WorldPos;
+	vertPos = WorldPos;
+
+	vertNormal = ANormal;
 
 	color = instanceColor;
-
-	normalVector = mat3(instanceMatrix) * ANormal;
 };

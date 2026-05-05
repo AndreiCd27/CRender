@@ -68,6 +68,9 @@ int Engine3D::setupWindow(const int WINDOW_WIDTH, const int WINDOW_HEIGHT, const
 	gladLoadGL();
 	//Specify Viewport to OpenGL ( from (0,0) to (W_WIDTH,W_HEIGHT) )
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+	cfg.Exec(WINDOW_SETUP_STAGE);
+
 	return 1;
 }
 
@@ -87,6 +90,8 @@ void Engine3D::setupShaders() {
 	shadowProgram.Setup("Shaders/shadow.vert", "Shaders/shadow.frag");
 
 	glEnable(GL_DEPTH_TEST);
+
+	cfg.Exec(SHADER_SETUP_STAGE);
 
 }
 
@@ -134,6 +139,8 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 	EBO_1.Unbind();
 
 	if (DEBUG)std::cout << "Unbinding..\n";
+
+	cfg.Exec(GEOMETRY_ARRAY_OBJECTS_SETUP_STAGE);
 }
 
 void Engine3D::setupInstanceVBO() {
@@ -167,6 +174,8 @@ void Engine3D::setupInstanceVBO() {
 	VAO_1.Unbind();
 
 	InstanceVBOSetupComplete = true;
+
+	cfg.Exec(INSTANCE_ARRAY_OBJECTS_SETUP_STAGE);
 
 }
 
@@ -211,7 +220,19 @@ void Engine3D::DrawInstances(Blueprint* BLUEPRINT, const Tile* TILE) {
 Camera& Engine3D::getCamera(bool Sun) { if (Sun) { return SunCamera; } return UserCamera; }
 Scene* Engine3D::getScene() { return &MainScene; }
 
-void Engine3D::initGameFrame() {
+void Engine3D::initGameFrame(float timeOfDay) {
+
+	float latitudeDeg = 40.0f;
+
+	float hourAngle = (timeOfDay - 12.0f) * (glm::pi<float>() / 12.0f);
+	float latRad = glm::radians(latitudeDeg);
+
+	float x = sin(hourAngle);
+	float y = cos(hourAngle) * cos(latRad);
+	float z = cos(hourAngle) * sin(latRad);
+
+	SunCamera.Position = AVector3(x * 100.0f, y * 100.0f, z * 100.0f);
+
 	// Framecounter
 	double CURRENT_TIME = glfwGetTime();
 	double timeDifference = CURRENT_TIME - FPS.PREV_TIME;
@@ -229,13 +250,25 @@ void Engine3D::initGameFrame() {
 	MainScene.ExecuteInstancePool();
 	// Set background color to be drawn
 	glClearColor(backgroundColor.R, backgroundColor.G, backgroundColor.B, backgroundColor.A);
+
+	cfg.Exec(INIT_GAME_FRAME_STAGE);
 }
 
 
 void Engine3D::registerCameraInput(float FOVdeg, float zNear, float zFar) {
-	UserCamera.Inputs(window.getWindow(), FPS.msPerFrame);
+
 	//UserCamera.Matrix(FOVdeg, zNear, zFar, windowAspectRatio, shaderProgram);
 	UserCamera.Matrix(FOVdeg, zNear, zFar, window.getAspectRatio(), instanceProgram);
+
+	if (cfg.CameraOverride == true) {
+		cfg.Exec(CAMERA_INPUT_STAGE);
+
+		return;
+	}
+
+	UserCamera.Inputs(window.getWindow(), FPS.msPerFrame);
+
+	cfg.Exec(CAMERA_INPUT_STAGE);
 }
 
 void Engine3D::DrawAllInstances() {
@@ -282,36 +315,6 @@ void Engine3D::DrawAllInstances() {
 	}
 }
 
-void Engine3D::shadowPassInstanceShader() {
-	shadowProgram.Activate();
-	VAO_1.Bind();
-
-	int matarraysize = (int)MainScene.GetMatrixOrganizer().GetMultiArray().size() * sizeof(InstanceData);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetMatrixOrganizer().GetMultiArray()[0]);
-
-	// The sun looks from the UserCamera's position, so the shadowsMap doesn't stay forever at (0,0,0)
-	SunCamera.LightMatrix(500.0f, shadowProgram, false, UserCamera.Position);
-
-	DrawAllInstances();
-}
-
-
-void Engine3D::renderPassInstanceShader() {
-	// START TO DRAW INSTANCES
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
-
-	int matarraysize = (int)MainScene.GetMatrixOrganizer().GetMultiArray().size() * sizeof(InstanceData);
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetMatrixOrganizer().GetMultiArray()[0]);
-
-	DrawAllInstances();
-}
-
 void Engine3D::shadowPass() {
 	glBindFramebuffer(GL_FRAMEBUFFER, depthTextureObject.FBO_ID);
 	glViewport(0, 0, 4096, 4096);
@@ -320,7 +323,13 @@ void Engine3D::shadowPass() {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	
-	shadowPassInstanceShader();
+	shadowProgram.Activate();
+	VAO_1.Bind();
+
+	// The sun looks from the UserCamera's position, so the shadowsMap doesn't stay forever at (0,0,0)
+	SunCamera.LightMatrix(500.0f, shadowProgram, false, UserCamera.Position);
+
+	DrawAllInstances();
 	
 }
 
@@ -339,31 +348,58 @@ void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	glViewport(0, 0, window.getWidth(), window.getHeight());
-	//Clear the BACK BUFFER and assign our color to it
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glCullFace(GL_BACK);
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+
 	
-	renderPassInstanceShader();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Activate Depth Texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
+	
+	DrawAllInstances();
+	
+	glDisable(GL_BLEND);
+}
+
+void Engine3D::RenderInstances(float timeOfDay) {
+
+	// Send & Update Instance Data
+	int matarraysize = (int)MainScene.GetMatrixOrganizer().GetMultiArray().size() * sizeof(InstanceData);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, matarraysize, NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, matarraysize, &MainScene.GetMatrixOrganizer().GetMultiArray()[0]);
+	//
+
+	initGameFrame(timeOfDay);
+
+	if (cfg.RenderOverride) {
+
+		cfg.Exec(RENDER_INSTANCES_STAGE);
+
+		//std::cout << "Executed Render Override \n";
+		
+		//Swap BACK BUFFER with FRONT BUFFER
+		glfwSwapBuffers(window.getWindow());
+		// Get events (for controls, event handling, closing, etc.)
+		glfwPollEvents();
+
+		return;
+	}
+
+	shadowPass();
+	renderPass(45.0f, 0.1f, 1000.0f);
 
 	//Swap BACK BUFFER with FRONT BUFFER
 	glfwSwapBuffers(window.getWindow());
 	// Get events (for controls, event handling, closing, etc.)
 	glfwPollEvents();
-}
-
-void Engine3D::RenderInstances(float timeOfDay) {
-	double ROT = (timeOfDay - 12.0f) / 12.0f * glm::pi<double>();
-	float sinROT = sin(ROT);
-	float cosROT = cos(ROT);
-	SunCamera.Position = AVector3(100.0f * sinROT, 100.0f * cosROT, 50.0f);
-	initGameFrame();
-	shadowPass();
-	renderPass(45.0f, 0.1f, 1000.0f);
 }
 /* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 Tile* Engine3D::getVisibleCameraFrustum() {

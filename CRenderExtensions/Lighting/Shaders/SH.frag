@@ -1,0 +1,52 @@
+#version 430 core
+
+// Light Direction either simple SH or ZH convoluted with cosine (Funke-Hecke)
+uniform vec4 LightSH[4];
+
+// Samplers for SH visibility functions coefficients C(l,m)
+uniform sampler3D V0;
+uniform sampler3D V1;
+uniform sampler3D V2;
+uniform sampler3D V3;
+
+uniform vec3 WorldMin;
+uniform vec3 WorldMax;
+
+uniform vec3 LightDir;
+
+in vec4 vertPos;
+in vec3 vertNormal;
+in vec4 color;
+
+out vec4 FragColor;
+
+void main() {
+
+    vec3 uvw;
+    uvw.x = (vertPos.x - WorldMin.x) / (WorldMax.x - WorldMin.x);
+    uvw.z = (vertPos.z - WorldMin.z) / (WorldMax.z - WorldMin.z); // Depth
+    uvw.y = (vertPos.y - WorldMin.y) / (WorldMax.y - WorldMin.y); // Height
+
+    uvw = clamp(uvw, 0.001, 0.999);
+
+    // Extracting SH coefficients for visibility
+    vec4 c0 = texture(V0, uvw);
+    vec4 c1 = texture(V1, uvw);
+    vec4 c2 = texture(V2, uvw);
+    vec4 c3 = texture(V3, uvw);
+
+    // Evaluate Visibility in the light's direction
+    float Vis = 0.0;
+    Vis += dot(c0, LightSH[0]);
+    Vis += dot(c1, LightSH[1]);
+    Vis += dot(c2, LightSH[2]);
+    Vis += dot(c3, LightSH[3]);
+
+    float visibility = clamp(Vis, 0.2, 1.0);
+
+    vec3 finalColor = color.rgb * visibility;
+
+    FragColor = vec4(finalColor, color.a);
+
+    //FragColor = vec4(uvw,1.0);
+}

@@ -44,6 +44,8 @@ public:
 	void Rotate_InPlace(const AVector3& ROT);
 	float Magnitude() const;
 
+	float Dot(const AVector3 v) const;
+
 	operator glm::vec3() const; // Converts easily to glm::vec3
 
 	void DEBUG_Print() const;

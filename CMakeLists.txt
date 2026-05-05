@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(oop)
+project(CRender)
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           CMAKE CONFIG
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,20 +18,6 @@ elseif(DEFINED ENV{WARNINGS_AS_ERRORS})
 else()
     set(WARNINGS_AS_ERRORS ON)
 endif()
-
-#Additional Cmakelists
-
-add_subdirectory(Libraries/include/glm)
-
-#add_subdirectory(Libraries/glfw)
-
-# Libraries
-add_library(glad)
-target_sources(glad PRIVATE src/glad.c)
-target_include_directories(glad PUBLIC Libraries/include)
-
-find_package(OpenGL REQUIRED)
-#find_package(glfw3 REQUIRED)
 
 if (WIN32) 
     if (MSVC)
@@ -53,17 +43,57 @@ elseif (UNIX AND NOT APPLE)
     message("Linux GLFW library used")
 endif()
 
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-# Main executable
-set(HEADER_FILES Headers/Engine3D.h Headers/Camera.h 
-Headers/Scene.h Headers/Tile.h Headers/GeometryLoader.h
-    Headers/GeometryBasics.h Headers/Texture.h 
+#           EXTERNAL LIBRARIES
+
+#Additional Cmakelists
+add_subdirectory(Libraries/include/glm)
+
+#add_subdirectory(Libraries/glfw)
+
+add_library(glad src/glad.c)
+target_sources(glad PRIVATE )
+target_include_directories(glad PUBLIC Libraries/include)
+
+find_package(OpenGL REQUIRED)
+#find_package(glfw3 REQUIRED)
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           CRENDER EXTENSIONS
+
+file(GLOB_RECURSE EXTENSION_SOURCES CONFIGURE_DEPENDS "CRenderExtensions/*.cpp")
+file(GLOB_RECURSE EXTENSION_HEADERS CONFIGURE_DEPENDS "CRenderExtensions/*.h")
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           HEADER FILES
+
+set(HEADER_FILES 
+    Headers/Engine3D.h 
+    Headers/Camera.h 
+    Headers/Scene.h 
+    Headers/Tile.h 
+    Headers/GeometryLoader.h
+    Headers/GeometryBasics.h 
+    Headers/Texture.h 
     Headers/MultiArray.h 
-    Headers/VBO.h Headers/EBO.h Headers/VAO.h 
+    Headers/VBO.h 
+    Headers/EBO.h 
+    Headers/VAO.h 
     Headers/shaderClass.h
     Headers/Instance.h
     Headers/Window.h
+    Headers/ComputeShader.h
+    Headers/Action.h
+    Headers/EngineConfig.h
 )
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           SOURCE FILES
+
 add_executable(${PROJECT_NAME} src/Main.cpp 
     src/Engine3D.cpp src/Camera.cpp 
     src/Tile.cpp src/Scene.cpp
@@ -73,11 +103,31 @@ add_executable(${PROJECT_NAME} src/Main.cpp
     src/shaderClass.cpp
     src/Instance.cpp
     src/Window.cpp
+    src/ComputeShader.cpp
     ${HEADER_FILES}
+    ${EXTENSION_HEADERS}
+    ${EXTENSION_SOURCES}
 )
 
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           TARGET INCLUDE DIRECTORIES
+
+target_include_directories(${PROJECT_NAME} PRIVATE CRenderExtensions)
 target_include_directories(${PROJECT_NAME} PRIVATE Headers)
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE Libraries/include)
+
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    "CRenderExtensions/Lighting/Headers"
+    "Headers"
+)
+
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           TARGET LINK DIRECTORIES
+
 #target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_LIB} ${EXTRA_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -85,10 +135,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL 
     ${CMAKE_DL_LIBS}
 )
-# Resources + Shaders
+
+# ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#           RESOURCES + SHADERS
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/ComputeShaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/CRenderExtensions DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 
 #GITHUB ACTIONS

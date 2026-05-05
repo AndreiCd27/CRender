@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 layout (location = 0) in vec3 APosition;
 layout (location = 4) in mat4 instanceMatrix;
 
