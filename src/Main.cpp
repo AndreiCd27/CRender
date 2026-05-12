@@ -35,7 +35,8 @@ int main() {
 
     // SH soft shadows
 
-    SHLM shlm;
+    SHLM shlm(engine, engine->getCFG(), 
+        AVector3(512,16,512), AVector3(-1024.0f, -32.0f, -1024.0f), AVector3(1024.0f, 32.0f, 1024.0f));
 
     auto b_compute_t0 = std::chrono::high_resolution_clock::now();
 
@@ -86,7 +87,7 @@ int main() {
 
     shlm.Load_Cubemap_GPU_ComputeShader();
 
-    shlm.BindToEngine(engine, engine->getCFG(), 45.0f, 0.01f, 1000.0f);
+    shlm.BindToEngine(45.0f, 0.01f, 1000.0f);
 
     auto b_compute_t1 = std::chrono::high_resolution_clock::now();
 

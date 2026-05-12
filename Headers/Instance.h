@@ -107,7 +107,7 @@ public:
 
 	// ---------- GETTERS
 
-	int GetBlueprintID();
+	int GetBlueprintID() const;
 
 	inline AVector3 GetPosition();
 	inline AVector3 GetRotation();

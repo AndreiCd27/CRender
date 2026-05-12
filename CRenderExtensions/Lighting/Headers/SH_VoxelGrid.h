@@ -6,12 +6,14 @@
 template <int num, int MaxL>
 class SHVoxelGrid {
 
-	const int gridX = 256;
-	const int gridY = 32;
-	const int gridZ = 256;
+	const int gridX;
+	const int gridY;
+	const int gridZ;
 
-	const float worldMinX, worldMinY, worldMinZ;
-	const float worldMaxX, worldMaxY, worldMaxZ;
+	const AVector3 WorldMin;
+	const AVector3 WorldMax;
+
+	const AVector3 WorldDelta;
 
 	// Weighted shadow functions for soft shadows
 	/*
@@ -29,9 +31,9 @@ public:
 	std::vector<float> volumeData[4];
 	std::vector<int> voxelizedBlockers;
 
-	SHVoxelGrid(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) :
-		worldMinX(minX), worldMinY(minY), worldMinZ(minZ), 
-		worldMaxX(maxX), worldMaxY(maxY), worldMaxZ(maxZ) 
+	SHVoxelGrid(AVector3 VoxelResolution, AVector3 WorldMin, AVector3 WorldMax) :
+		gridX((int)VoxelResolution.x), gridY((int)VoxelResolution.y), gridZ((int)VoxelResolution.z),
+		WorldMin(WorldMin), WorldMax(WorldMax), WorldDelta(WorldMax - WorldMin)
 	{
 		for (int i = 0; i < 4; i++) volumeData[i].resize(gridX * gridY * gridZ * 4);
 		voxelizedBlockers.resize(gridX * gridY * gridZ);
@@ -43,10 +45,10 @@ public:
 	int GetGridZ() { return gridZ; }
 
 	AVector3 GetWorldMin() {
-		return AVector3(worldMinX, worldMinY, worldMinZ);
+		return WorldMin;
 	}
 	AVector3 GetWorldMax() {
-		return AVector3(worldMaxX, worldMaxY, worldMaxZ);
+		return WorldMax;
 	}
 
 	void ComputeSHEXP(float* f) {
@@ -108,8 +110,8 @@ public:
 	void VoxelizeBlockers(const BlockerXYZR<num>& b, int count) {
 
 		const float avrgGridResolution = 
-			((worldMaxX - worldMinX) / gridX) * 0.5f + 
-			((worldMaxZ - worldMinZ) / gridZ) * 0.5f;
+			(WorldDelta.x / gridX) * 0.5f + 
+			(WorldDelta.z / gridZ) * 0.5f;
 		const float biasGrid = avrgGridResolution * 0.125f;
 
 		int nrThreads = std::thread::hardware_concurrency();
@@ -136,19 +138,20 @@ public:
 
 					float R = (br + biasGrid) * (br + biasGrid);
 
-					int startX = worldToGrid(bx - br, worldMinX, worldMaxX, gridX);
-					int endX = worldToGrid(bx + br, worldMinX, worldMaxX, gridX);
-					int startY = worldToGrid(by - br, worldMinY, worldMaxY, gridY);
-					int endY = worldToGrid(by + br, worldMinY, worldMaxY, gridY);
-					int startZ = worldToGrid(bz - br, worldMinZ, worldMaxZ, gridZ);
-					int endZ = worldToGrid(bz + br, worldMinZ, worldMaxZ, gridZ);
+					int startX = worldToGrid(bx - br, WorldMin.x, WorldMax.x, gridX);
+					int endX = worldToGrid(bx + br, WorldMin.x, WorldMax.x, gridX);
+					int startY = worldToGrid(by - br, WorldMin.y, WorldMax.y, gridY);
+					int endY = worldToGrid(by + br, WorldMin.y, WorldMax.y, gridY);
+					int startZ = worldToGrid(bz - br, WorldMin.z, WorldMax.z, gridZ);
+					int endZ = worldToGrid(bz + br, WorldMin.z, WorldMax.z, gridZ);
+
 
 					for (int y = startY; y <= endY; y++) {
-						float py = worldMinY + (float(y) / (float)(gridY - 1)) * (worldMaxY - worldMinY);
+						float py = WorldMin.y + (float(y) / (float)(gridY - 1)) * WorldDelta.y;
 						for (int z = startZ; z <= endZ; z++) {
-							float pz = worldMinZ + (float(z) / (float)(gridZ - 1)) * (worldMaxZ - worldMinZ);
+							float pz = WorldMin.z + (float(z) / (float)(gridZ - 1)) * WorldDelta.z;
 							for (int x = startX; x <= endX; x++) {
-								float px = worldMinX + (float(x) / (float)(gridX - 1)) * (worldMaxX - worldMinX);
+								float px = WorldMin.x + (float(x) / (float)(gridX - 1)) * WorldDelta.x;
 
 								float dx = px - bx;
 								float dy = py - by;
@@ -187,13 +190,13 @@ public:
 
 			for (int y = startY; y < endY; y++) {
 				// Y-Layer height
-				float py = worldMinY + (float(y) / (float)(gridY - 1)) * (worldMaxY - worldMinY);
+				float py = WorldMin.y + (float(y) / (float)(gridY - 1)) * WorldDelta.y;
 
 				for (int z = 0; z < gridZ; z++) {
-					float pz = worldMinZ + (float(z) / (float)(gridZ - 1)) * (worldMaxZ - worldMinZ);
+					float pz = WorldMin.z + (float(z) / (float)(gridZ - 1)) * WorldDelta.z;
 
 					for (int x = 0; x < gridX; x++) {
-						float px = worldMinX + (float(x) / (float)(gridX - 1)) * (worldMaxX - worldMinX);
+						float px = WorldMin.x + (float(x) / (float)(gridX - 1)) * WorldDelta.x;
 
 						float voxelSH[16];
 						for (int i = 0; i < 16; i++) voxelSH[i] = 0.0f;
@@ -285,10 +288,10 @@ public:
 
 			futures.push_back(std::async(std::launch::async, [this, &vert, &ind, startX, endX, gridX, gridY, gridZ, meshID]() {
 				for (int x = startX; x < endX; x++) {
-					float px = worldMinX + (float(x) / (gridX - 1)) * (worldMaxX - worldMinX);
+					float px = WorldMin.x + (float(x) / (gridX - 1)) * WorldDelta.x;
 
 					for (int z = 0; z < gridZ; z++) {
-						float pz = worldMinZ + (float(z) / (gridZ - 1)) * (worldMaxZ - worldMinZ);
+						float pz = WorldMin.z + (float(z) / (gridZ - 1)) * WorldDelta.z;
 
 						// Find all intersections over Y axis
 						std::vector<float> intersections;
@@ -312,8 +315,8 @@ public:
 							float yStart = intersections[i];
 							float yEnd = intersections[i + 1];
 
-							int gridYStart = std::clamp((int)((yStart - worldMinY) / (worldMaxY - worldMinY) * (gridY - 1)), 0, gridY - 1);
-							int gridYEnd = std::clamp((int)((yEnd - worldMinY) / (worldMaxY - worldMinY) * (gridY - 1)), 0, gridY - 1);
+							int gridYStart = std::clamp((int)((yStart - WorldMin.y) / WorldDelta.y * (gridY - 1)), 0, gridY - 1);
+							int gridYEnd = std::clamp((int)((yEnd - WorldMin.y) / WorldDelta.y * (gridY - 1)), 0, gridY - 1);
 
 							for (int y = gridYStart; y <= gridYEnd; y++) {
 								int vIdx = (z * gridY * gridX + y * gridX + x);

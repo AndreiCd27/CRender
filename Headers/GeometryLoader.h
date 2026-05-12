@@ -45,6 +45,11 @@ public:
 
 	int GetID() const;
 
+	static int GetSafeBlueprintCount() { return safeBlueprintCount; }
+
+	int GetVerticesHandleID() const { return VerticesHandleID; };
+	int GetIndiciesHandleID() const { return IndiciesHandleID; };
+
 	AVertex Center;
 	static int GetShiftComponent();
 

@@ -3,7 +3,9 @@
 
 const std::string path = "CRenderExtensions/Lighting";
 
-SHLM::SHLM() {
+SHLM::SHLM(Engine3D* engine, EngineConfig* config, AVector3 VoxelResolution, AVector3 WorldMin, AVector3 WorldMax)
+	: VoxelGrid(VoxelResolution, WorldMin, WorldMax), LightingService(engine,config)
+{
 
 	SphericalHarmonics = new SH<SH_Order>();
 	SH_OBJ_Blockers = new BlockerXYZR<MAX_BLOCKER_COUNT>;
@@ -15,15 +17,15 @@ SHLM::SHLM() {
 
 }
 
-void SHLM::BindToEngine(Engine3D* e, EngineConfig* cfg, float FOVdeg, float zNear, float zFar) {
+void SHLM::BindToEngine(float FOVdeg, float zNear, float zFar) {
 
-	std::function<void(float, float, float, Engine3D*)> SH_f = [this](float f1, float f2, float f3, Engine3D* eng) {
-		this->SH_renderPass(f1, f2, f3, eng);
+	std::function<void(float, float, float)> SH_f = [this](float f1, float f2, float f3) {
+		this->SH_renderPass(f1, f2, f3);
 	};
 
-	cfg->RenderOverride = true;
+	config->RenderOverride = true;
 
-	cfg->AddAction(RENDER_INSTANCES_STAGE, SH_f, FOVdeg, zNear, zFar, e);
+	config->AddAction(RENDER_INSTANCES_STAGE, SH_f, FOVdeg, zNear, zFar);
 }
 
 void SHLM::SetBlockerSKY(float phi, float theta, float radius, float dist) {
@@ -116,6 +118,49 @@ void SHLM::Load_Cubemap_GPU_ComputeShader() {
 	std::vector<GPU_Trig> trigData;
 
 	//// Get Triangles From All Meshes
+
+	const auto& BlueprintData = engine->getScene()->GetBlueprints();
+
+	// each matrix is an instance model matrix
+	const ArrayOrganizer<InstanceData>& MatrixOrg = engine->getScene()->GetMatrixOrganizer();
+	const ArrayOrganizer<Instance>& InstanceOrg = engine->getScene()->GetInstanceOrganizer();
+
+	const std::vector<InstanceData>& MatrixArray = MatrixOrg.GetMultiArray();
+	const std::vector<Instance>& InstanceArray = InstanceOrg.GetMultiArray();
+
+	const auto& VertIndOrg = engine->getScene()->GetEBO_Organizer();
+	const auto& VertOrg = engine->getScene()->GetVBO_Organizer();
+
+	const std::vector<GLuint>& VertIndArray = VertIndOrg.GetMultiArray();
+	const std::vector<AVertex>& VertArray = VertOrg.GetMultiArray();
+
+	AVector3 TempV[3];
+
+	for (const Handle& matHandle : MatrixOrg.GetHandles()) {
+
+		// Ref: int handleID = ins.Template->GetID() | (ins.tile->GetTileID() << Tile::shiftComponent);
+		const Blueprint* B = BlueprintData[matHandle.id & Blueprint::GetSafeBlueprintCount()];
+		//const int VertHandleID = B->GetVerticesHandleID();
+		const int IndHandleID = B->GetVerticesHandleID();
+
+		const Handle& IndHandle = VertIndOrg.GetHandleData(IndHandleID);
+		//const Handle& VertHandle = VertOrg.GetHandleData(VertHandleID);
+
+		for (int i = matHandle.offset; i < matHandle.offset + matHandle.size; i++) {
+			const auto& InstanceMatrix = MatrixArray[i];
+			int InsID = InstanceArray[i].GetEID();
+
+			for (int j = IndHandle.offset; j < IndHandle.offset + IndHandle.size; j++) {
+				int Vidx = VertIndArray[j];
+				const AVertex& V = VertArray[Vidx];
+				glm::vec4 glmV = InstanceMatrix.matrix * glm::vec4(V.POS.x, V.POS.y, V.POS.z, 1.0f);
+				TempV[j % 3] = AVector3(glmV.x, glmV.y, glmV.z);
+				if (j % 3 == 2) {
+					trigData.push_back(GPU_Trig(TempV[0], TempV[1], TempV[2], InsID));
+				}
+			}
+		}
+	}
 
 
 	////
@@ -211,10 +256,10 @@ SHLM::~SHLM() {
 }
 
 
-void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar, Engine3D* e) {
+void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar) {
 
 	SH_Program.Activate();
-	e->VAO_1.Bind();
+	engine->VAO_1.Bind();
 
 	GLint blockersLoc = SH_Program.GetUniformLocation("Blockers");
 	glUniform1i(blockersLoc, 0);
@@ -222,7 +267,7 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar, Engine3D* e) {
 	GLint countLoc = SH_Program.GetUniformLocation("BlockerCount");
 	glUniform1i(countLoc, BlockerCountOBJ);
 
-	e->registerCameraInput(FOVdeg, zNear, zFar);
+	engine->registerCameraInput(FOVdeg, zNear, zFar);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, texture3D_IDs[0]);
@@ -244,7 +289,7 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar, Engine3D* e) {
 	SH_Program.SetUniformVector3("WorldMax", VoxelGrid.GetWorldMax());
 
 	float LightSH[16]; for (int i = 0; i < 16; i++) LightSH[i] = 0.0f;
-	AVector3 L = e->SunCamera.Position.Normalize();
+	AVector3 L = engine->SunCamera.Position.Normalize();
 	// Evaluated direction in SH with the ZH convolution normalization constants
 	//SphericalHarmonics->ComputeLogSHCoefficientsXYZR(L.x, L.y, L.z, SphericalHarmonics->ZHconv, LightSH);
 	SphericalHarmonics->GetLightBasisYUp(L.x, L.y, L.z, LightSH);
@@ -274,7 +319,7 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar, Engine3D* e) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glEnable(GL_DEPTH_TEST);
-	glViewport(0, 0, e->window.getWidth(), e->window.getHeight());
+	glViewport(0, 0, engine->window.getWidth(), engine->window.getHeight());
 
 	// 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -285,7 +330,7 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar, Engine3D* e) {
 	glDepthFunc(GL_LESS);
 	glDisable(GL_BLEND);
 
-	e->DrawAllInstances();
+	engine->DrawAllInstances();
 }
 
 /*

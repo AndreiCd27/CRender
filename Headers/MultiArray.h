@@ -190,7 +190,7 @@ public:
 		return prevSize;
 	}
 
-	const Handle& GetHandleData(int HandleID) {
+	const Handle& GetHandleData(int HandleID) const {
 		auto iterator = ID_TO_INDEX.find(HandleID);
 		if (iterator == ID_TO_INDEX.end()) {
 			throw ArrayOrganizerException("Invalid ID " + std::to_string(HandleID), 0);
@@ -209,7 +209,10 @@ public:
 	}
 	*/
 
-	std::vector<T>& GetMultiArray() {
+	const std::vector<T>& GetMultiArray() const {
+		return Array;
+	}
+	std::vector<T>& GetMultiArrayModifiable() {
 		return Array;
 	}
 
@@ -223,7 +226,7 @@ public:
 	Handle& GetHandleFromIndex(int HandleIndex) {
 		return Handles[HandleIndex];
 	}
-	const std::vector<Handle>& GetHandles() {
+	const std::vector<Handle>& GetHandles() const {
 		return Handles;
 	}
 };
@@ -240,7 +243,7 @@ public:
 	Ref(ArrayOrganizer<T>* _Organizer, int _HIndex, int _HOffset) : Organizer(_Organizer), HIndex(_HIndex), HOffset(_HOffset) {};
 	T* operator->() const {
 		if (HIndex == -1) return _Access();
-		return &Organizer->GetMultiArray()[Organizer->GetHandleFromIndex(HIndex).offset + HOffset];
+		return &Organizer->GetMultiArrayModifiable()[Organizer->GetHandleFromIndex(HIndex).offset + HOffset];
 	}
 	T* _Access() const {
 		if (pool == nullptr) throw ArrayOrganizerException("Template not found; Invalid Reference", 9);

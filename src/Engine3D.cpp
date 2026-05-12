@@ -106,8 +106,8 @@ void Engine3D::setupGeometryArrayObjects(const char* style) {
 
 	if (DEBUG)std::cout << "Got vertex and indicies buffers \n";
 
-	std::vector<AVertex>& vert = MainScene.GetVBO_Organizer().GetMultiArray();
-	std::vector<GLuint>& indicies = MainScene.GetEBO_Organizer().GetMultiArray();
+	std::vector<AVertex>& vert = MainScene.GetVBO_Organizer().GetMultiArrayModifiable();
+	std::vector<GLuint>& indicies = MainScene.GetEBO_Organizer().GetMultiArrayModifiable();
 	VBO_1.Setup(vert.data(), vert.size() * sizeof(AVertex), drawStyle);
 	EBO_1.Setup(indicies.data(), indicies.size() * sizeof(GLuint), drawStyle);
 

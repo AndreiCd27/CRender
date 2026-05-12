@@ -299,8 +299,8 @@ Blueprint* Scene::CreateUnitVector() {
 void Scene::UpdateBatchVectors(std::vector<UserRef<Instance>>& References,
 	std::vector<AVector3>& Vectors, int VECTOR_TYPE_TARGET) {
 
-	auto& matArray = MatrixOrganizer.GetMultiArray();
-	auto& insArray = InstanceOrganizer.GetMultiArray();
+	auto& matArray = MatrixOrganizer.GetMultiArrayModifiable();
+	auto& insArray = InstanceOrganizer.GetMultiArrayModifiable();
 	auto& handles = MatrixOrganizer.GetHandles();
 
 	for (int i = 0; i < (int)References.size(); ++i) {
@@ -323,8 +323,8 @@ void Scene::UpdateBatchVectors(std::vector<UserRef<Instance>>& References,
 
 void Scene::UpdateBatchColors(std::vector<UserRef<Instance>>& References, std::vector<AColor3>& Colors) {
 
-	auto& matArray = MatrixOrganizer.GetMultiArray();
-	auto& insArray = InstanceOrganizer.GetMultiArray();
+	auto& matArray = MatrixOrganizer.GetMultiArrayModifiable();
+	auto& insArray = InstanceOrganizer.GetMultiArrayModifiable();
 	auto& handles = MatrixOrganizer.GetHandles();
 
 	for (int i = 0; i < (int)References.size(); ++i) {

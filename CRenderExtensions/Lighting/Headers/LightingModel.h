@@ -9,11 +9,23 @@
 
 #include "Engine3D.h"
 
+// LightingService
+
+class LightingService {
+protected:
+	Engine3D* engine = nullptr;
+	EngineConfig* config = nullptr;
+public:
+	LightingService(Engine3D* engine, EngineConfig* config) : engine(engine), config(config) {}
+};
+
+
 #define MAX_BLOCKER_COUNT 65536
 #define SH_Order 3
 
 // Spherical Harmonic Lighting Model (SHLM)
-class SHLM {
+
+class SHLM : public LightingService {
 	// For shadow rendering using Spherical Harmonics (see SHEXP.h)
 
 	SH<SH_Order>* SphericalHarmonics = nullptr;
@@ -22,7 +34,7 @@ class SHLM {
 	int BlockerCountOBJ = 0;
 	int BlockerCountSKY = 0;
 
-	SHVoxelGrid<MAX_BLOCKER_COUNT, SH_Order> VoxelGrid{ -512.0f, 0.0f, -512.0f, 512.0f, 128.0f, 512.0f };
+	SHVoxelGrid<MAX_BLOCKER_COUNT, SH_Order> VoxelGrid;
 
 	Shader SH_Program;
 
@@ -52,9 +64,9 @@ public:
 
 	// SPHERICAL HARMONICS RENDERING //////////////////////////////////////////////////
 
-	SHLM();
+	SHLM(Engine3D* engine, EngineConfig* config, AVector3 VoxelResolution, AVector3 WorldMin, AVector3 WorldMax);
 
-	void BindToEngine(Engine3D* e, EngineConfig* cfg, float FOVdeg, float zNear, float zFar);
+	void BindToEngine(float FOVdeg, float zNear, float zFar);
 
 	void SetBlockerSKY(float phi, float theta, float radius, float dist);
 	void SetBlockerOBJ(float x, float y, float z, float radius, int insID);
@@ -70,9 +82,9 @@ public:
 	////////////////////////////////////////////////////////////////////////////////////
 
 
-	void shadowMaskPass(float FOVdeg, float zNear, float zFar, Engine3D* e);
+	void shadowMaskPass(float FOVdeg, float zNear, float zFar);
 
-	void SH_renderPass(float FOVdeg, float zNear, float zFar, Engine3D* e);
+	void SH_renderPass(float FOVdeg, float zNear, float zFar);
 
 	~SHLM();
 

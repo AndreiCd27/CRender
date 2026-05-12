@@ -203,13 +203,13 @@ void Scene::ExecuteInstancePool() {
 	}
 
 
-	std::vector<Instance>& insArray = insArrayOrg.GetMultiArray();
-	std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArray();
+	std::vector<Instance>& insArray = insArrayOrg.GetMultiArrayModifiable();
+	std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArrayModifiable();
 
 	// Creăm un vector de indecși pentru a itera în paralel
 	std::vector<int> indices(insArray.size());
 	std::iota(indices.begin(), indices.end(), 0);
-
+	
 	std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](int i) {
 		auto& ins = insArray[i];
 		auto& data = matArray[i];

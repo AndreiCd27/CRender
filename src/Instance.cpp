@@ -87,7 +87,7 @@ void Instance::SetParent(UserRef<Instance>& _Parent) {
 	//Update_Cascade();
 }
 
-int Instance::GetBlueprintID() { return Template->GetID(); }
+int Instance::GetBlueprintID() const { return Template->GetID(); }
 
 AVector3 Instance::GetPosition() { return Position; }
 AVector3 Instance::GetRotation() { return Rotation; }
