@@ -50,7 +50,7 @@ void main() {
 
     Triangle tri = triangles[idx];
 
-    int insID = int(tri.v0.w + tri.v1.w + tri.v2.w);
+    int insID = int(tri.v0.w + 0.00001);
     
     // Get coordinates in Voxel Grid Space
     ivec3 gV0 = WorldToGrid(tri.v0.xyz);

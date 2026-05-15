@@ -47,6 +47,9 @@ class SHLM : public LightingService {
 
 	void GenTextures_Cubemap();
 
+	void ComputeShadersInit(const std::string& shdrName0, const std::string& shdrName1);
+	void SH_Textures_Init(int gridX, int gridY, int gridZ);
+
 public:
 
 	struct GPU_Blocker {
@@ -62,6 +65,8 @@ public:
 		}
 	};
 
+	void GetMeshTrianglesAll(std::vector<GPU_Trig>& trigData);
+
 	// SPHERICAL HARMONICS RENDERING //////////////////////////////////////////////////
 
 	SHLM(Engine3D* engine, EngineConfig* config, AVector3 VoxelResolution, AVector3 WorldMin, AVector3 WorldMax);
@@ -76,6 +81,8 @@ public:
 	void Load_Cubemap_MultiThreaded();
 	// FASTER
 	void Load_Cubemap_GPU_ComputeShader();
+	// MORE PRECISE
+	void Load_Cubemap_GPU_ComputeShader_Precise();
 
 	void Upload_Cubemap();
 

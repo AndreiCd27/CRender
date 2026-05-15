@@ -49,7 +49,7 @@ int main() {
         shlm.SetBlockerOBJ(x, y, z, r);
     }
     */
-
+    /*
     // CUBE c2
     shlm.SetBlockerOBJ(-5.0f, 5.0f, -5.0f,5.0f, 2);
     shlm.SetBlockerOBJ(5.0f, 5.0f, -5.0f,5.0f, 2);
@@ -84,10 +84,7 @@ int main() {
 
 
     shlm.SetBlockerOBJ(50.0f, 25.0f, 50.0f,15.0f,1);
-
-    shlm.Load_Cubemap_GPU_ComputeShader();
-
-    shlm.BindToEngine(45.0f, 0.01f, 1000.0f);
+    */
 
     auto b_compute_t1 = std::chrono::high_resolution_clock::now();
 
@@ -130,6 +127,13 @@ int main() {
     scene->GetInstanceOrganizer().print();
 
     float t = 8.0f;
+
+    // PRE-GAME LOOP ---> ACTIVATE SHLM
+
+    //shlm.Load_Cubemap_GPU_ComputeShader();
+    shlm.Load_Cubemap_GPU_ComputeShader_Precise();
+
+    shlm.BindToEngine(45.0f, 0.01f, 1000.0f);
 
     while (!engine->windowShouldClose()) {
 

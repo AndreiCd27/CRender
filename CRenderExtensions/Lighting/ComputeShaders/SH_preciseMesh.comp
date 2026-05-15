@@ -1,0 +1,239 @@
+#version 430 core
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+uniform int TrigCount;
+
+struct Triangle {
+    vec4 v0;
+    vec4 v1;
+    vec4 v2;
+};
+
+layout(rgba32f, binding = 0) uniform writeonly image3D volumeData0;
+layout(rgba32f, binding = 1) uniform writeonly image3D volumeData1;
+layout(rgba32f, binding = 2) uniform writeonly image3D volumeData2;
+layout(rgba32f, binding = 3) uniform writeonly image3D volumeData3;
+
+
+layout(std430, binding = 4) readonly buffer MeshBuffer {
+    Triangle triangles[];
+};
+
+uniform vec3 worldMin;
+uniform vec3 worldMax;
+uniform ivec3 gridRes;
+
+// SH normalization coefficients
+const vec4 SHNorm0 = vec4(0.282095, 0.488604, 0.488604, 0.488604);
+const vec4 SHNorm1 = vec4(1.092548, 1.092548, 0.315392, 1.092548);
+const vec4 SHNorm2 = vec4(0.546274, 0.590044, 2.890611, 0.457046);
+const vec4 SHNorm3 = vec4(0.373176, 0.457046, 1.4453055, 0.590044);
+
+// ZH normalization coefficients
+const vec4 ZHconv = vec4(3.544907, 2.046653, 1.585331, 1.339857);
+const vec4 ZHnormalize = vec4(-28.93514, -14.46757, -7.23378, -3.61689);
+
+vec4 ComputeZHVis(const float cosA, const float sinA) {
+
+    float sin2 = sinA * sinA;
+
+    vec4 ZH = vec4(1.0f - cosA, sin2, cosA * sin2, (5.0f * cosA * cosA - 1.0f) * sin2);
+
+    ZH *= ZHnormalize;
+    ZH *= ZHconv;
+    return ZH;
+}
+
+void AccumulateLogSH(const vec3 P, const vec4 ZHcoeff, inout vec4 LogSH[4]) {
+
+    // x^2, y^2, z^2
+	vec3 P2 = P * P;
+
+    // xy, yz, zx
+    vec3 Pc = P.xyz * P.yzx;
+
+    vec4 Comp0 = ZHcoeff.xyyy;
+    vec4 Comp1 = ZHcoeff.zzzz;
+    vec4 Comp2 = ZHcoeff.zwww;
+    vec4 Comp3 = ZHcoeff.wwww;
+
+	// ORDER L = 0 AND L = 1
+
+    vec4 XYZ_0 = vec4(1.0, P.x, P.y, P.z);
+
+    LogSH[0] += Comp0 * SHNorm0 * XYZ_0;
+
+	// ORDER L = 2 (first 4 terms)
+
+    vec4 XYZ_1 = vec4(Pc.z, Pc.x, 3.0 * P2.y - 1.0, Pc.y);
+
+    LogSH[1] += Comp1 * SHNorm1 * XYZ_1;
+
+    // ORDER L = 2 (last 1 term) AND L = 3 (first 3 terms)
+
+    vec4 XYZ_2 = vec4(P2.x - P2.z, P.x * (P2.x - 3.0 * P2.z), Pc.x * P.z, P.x * (5.0 * P2.y - 1.0));
+
+    LogSH[2] += Comp2 * SHNorm2 * XYZ_2;
+
+    // ORDER L = 3 (last 4 terms)
+
+    vec4 XYZ_3 = vec4(P.y * (5.0 * P2.y - 3.0), P.z * (5.0 * P2.y - 1.0), P.y * (P2.x - P2.z), P.z * (3.0 * P2.x - P2.z));
+
+    LogSH[3] += Comp3 * SHNorm3 * XYZ_3;
+
+}
+
+void ComputeSHEXP(inout vec4 LogSH[4]) {
+
+	// f0 is DC component of LogSH
+    float f0 = LogSH[0].x;
+
+	// Multiply it with Y<0,0> (0.282)
+	float g0 = exp(-f0 * 0.282095);
+
+	// DC Component of linear visibility vector:
+	LogSH[0].x = g0 * 3.544907; // sqrt(4pi)
+
+	// Scale Visibility on higher directions (L>0) with average g0
+    LogSH[0].yzw *= g0;
+    LogSH[1] *= g0;
+    LogSH[2] *= g0;
+    LogSH[3] *= g0;
+}
+
+void EvaluateSphereCap(const vec3 N, const float r, inout vec4 LogSH[4]) {
+
+    // magnitude(N) = 1 (unit sphere vector)
+
+	float sinAlpha = clamp(r, 0.0, 0.95); 
+    float cosAlpha = sqrt(max(0.0, 1.0 - sinAlpha * sinAlpha));
+			
+	vec4 ZHcoeff = ComputeZHVis(cosAlpha, sinAlpha);
+
+	AccumulateLogSH(N.xyz, ZHcoeff, LogSH);
+}
+
+float GetSphericalAreaLHuilier(const vec3 A, const vec3 B, const vec3 C) {
+    float cosAB = clamp(dot(A,B), -1.0, 1.0);
+    float cosBC = clamp(dot(B,C), -1.0, 1.0);
+    float cosCA = clamp(dot(C,A), -1.0, 1.0);
+
+    // L'Huilier formula
+    float a = acos(cosBC);
+    float b = acos(cosCA);
+    float c = acos(cosAB);
+    float s = 0.5 * (a + b + c);
+
+    float t = tan(s * 0.5) * tan(max(0.0, s-a) * 0.5) * tan(max(0.0, s-b) * 0.5) * tan(max(0.0, s-c) * 0.5);
+    return 4.0 * atan(sqrt(max(0.0, t)));
+}
+
+float GetSphericalArea(const vec3 A, const vec3 B, const vec3 C) {
+    float det = dot(A, cross(B, C));
+    
+    float al = clamp(dot(A, B), -1.0, 1.0);
+    float bl = clamp(dot(B, C), -1.0, 1.0);
+    float cl = clamp(dot(C, A), -1.0, 1.0);
+    
+    float div = 1.0 + al + bl + cl;
+    if (abs(div) < 0.0001) return 0.0;
+    
+    float num = abs(det);
+    float area = 2.0 * atan(num / div);
+    
+    return clamp(area, 0.0, 3.14159265);
+}
+
+float SphereAreaToRadius(const float AREA) {
+    float cosAlpha = 1.0 - (AREA / (2.0 * 3.14159265));
+    cosAlpha = clamp(cosAlpha, -1.0, 1.0);
+    return sqrt(1.0 - cosAlpha * cosAlpha); // sinAlpha = radius r
+}
+
+void EvaluateTriangleOnSphereSurface(const vec3 A, const vec3 B, const vec3 C, inout vec4 LogSH[4]) {
+
+    float AreaTotal = GetSphericalArea(A,B,C);
+    if (AreaTotal < 0.0001) return;
+
+    // Get medium lines
+    vec3 midAB = normalize(A+B);
+    vec3 midBC = normalize(B+C);
+    vec3 midCA = normalize(C+A);
+
+    // Area of all 4 sub-triangles formed by triangle points and medium lines
+    float AreaTriA = GetSphericalArea(A,midAB,midCA);
+    float AreaTriB = GetSphericalArea(B,midBC,midAB);
+    float AreaTriC = GetSphericalArea(C,midCA,midBC);
+    float AreaTriCenter = GetSphericalArea(midAB,midBC,midCA);
+
+    // Centroids
+    vec3 centroidA = normalize(A + midAB + midCA);
+    vec3 centroidB = normalize(B + midBC + midAB);
+    vec3 centroidC = normalize(C + midCA + midBC);
+    vec3 centroidCenter = normalize(midAB + midBC + midCA);
+
+    // Radiuses
+    float rA = SphereAreaToRadius(AreaTriA);
+    float rB = SphereAreaToRadius(AreaTriB);
+    float rC = SphereAreaToRadius(AreaTriC);
+    float rCenter = SphereAreaToRadius(AreaTriCenter);
+
+    EvaluateSphereCap(centroidA, rA, LogSH);
+    EvaluateSphereCap(centroidB, rB, LogSH);
+    EvaluateSphereCap(centroidC, rC, LogSH);
+    EvaluateSphereCap(centroidCenter, rCenter, LogSH);
+}
+
+void main() {
+    ivec3 voxelP = ivec3(gl_GlobalInvocationID);
+    if (voxelP.x >= gridRes.x || voxelP.y >= gridRes.y || voxelP.z >= gridRes.z) return;
+
+    // World-Space Voxel Position
+    vec3 p;
+    p.x = worldMin.x + (float(voxelP.x) / (gridRes.x - 1)) * (worldMax.x - worldMin.x);
+    p.y = worldMin.y + (float(voxelP.y) / (gridRes.y - 1)) * (worldMax.y - worldMin.y);
+    p.z = worldMin.z + (float(voxelP.z) / (gridRes.z - 1)) * (worldMax.z - worldMin.z);
+
+    // Blocker Index for ID Filtering
+    int vIdx = voxelP.z * gridRes.y * gridRes.x + voxelP.y * gridRes.x + voxelP.x;
+    int currInsID = -1; //voxelizedBlockers[vIdx];
+
+    // LogSH Accumulation /////////////////////////////////////////
+
+    vec4 voxelLogSH[4];
+    for(int i=0; i < 4; i++) voxelLogSH[i] = vec4(0.0);
+
+    for (int i = 0; i < TrigCount; i++) {
+
+        vec3 v0 = triangles[i].v0.xyz;
+        vec3 v1 = triangles[i].v1.xyz;
+        vec3 v2 = triangles[i].v2.xyz;
+
+        float d0 = distance(v0, p);
+        float d1 = distance(v1, p);
+        float d2 = distance(v2, p);
+        if (d0 < 0.05 || d1 < 0.05 || d2 < 0.05) continue;
+
+        vec3 A = (v0 - p) / d0;
+        vec3 B = (v1 - p) / d1;
+        vec3 C = (v2 - p) / d2;
+        
+        if (abs(dot(A, B)) > 0.999 || abs(dot(B, C)) > 0.999) continue;
+
+        EvaluateTriangleOnSphereSurface(A, B, C, voxelLogSH);
+    }
+
+
+    ////////////////////////////////////////////////////////////////
+
+    // SHEXP (SH Exponentiation)
+
+    ComputeSHEXP(voxelLogSH);
+
+    // Write the 16 coefficients in 4 textures
+    imageStore(volumeData0, voxelP, voxelLogSH[0]);
+    imageStore(volumeData1, voxelP, voxelLogSH[1]);
+    imageStore(volumeData2, voxelP, voxelLogSH[2]);
+    imageStore(volumeData3, voxelP, voxelLogSH[3]);
+}

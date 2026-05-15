@@ -88,38 +88,33 @@ void SHLM::Load_Cubemap_MultiThreaded() {
 	glBindTexture(GL_TEXTURE_3D, 0);
 }
 
-void SHLM::Load_Cubemap_GPU_ComputeShader() {
+void SHLM::ComputeShadersInit(const std::string& shdrName0, const std::string& shdrName1) {
+	if (VoxelizeMeshes.GetCompleteStatus()) return;
 
-	const int gridX = VoxelGrid.GetGridX();
-	const int gridY = VoxelGrid.GetGridY();
-	const int gridZ = VoxelGrid.GetGridZ();
+	GenTextures_Cubemap();
 
-	const AVector3 worldMin = VoxelGrid.GetWorldMin();
-	const AVector3 worldMax = VoxelGrid.GetWorldMax();
+	VoxelizeMeshes.Setup((path + shdrName0).c_str());
+	BakeVoxels.Setup((path + shdrName1).c_str());
 
-	if (!VoxelizeMeshes.GetCompleteStatus()) {
+	idxTrigBuffer = VoxelizeMeshes.CreateSSBO();
+	idxVoxelInsIDs = VoxelizeMeshes.CreateSSBO();
+	idxBlockerBuffer = VoxelizeMeshes.CreateSSBO();
+}
 
-		GenTextures_Cubemap();
+void SHLM::SH_Textures_Init(int gridX, int gridY, int gridZ) {
 
-		VoxelizeMeshes.Setup((path + "/ComputeShaders/VoxelizeMesh.comp").c_str());
-		BakeVoxels.Setup((path + "/ComputeShaders/SH_VoxelVis.comp").c_str());
-
-		idxTrigBuffer = VoxelizeMeshes.CreateSSBO();
-		idxVoxelInsIDs = VoxelizeMeshes.CreateSSBO();
-		idxBlockerBuffer = VoxelizeMeshes.CreateSSBO();
-
-
-		for (int i = 0; i < 4; i++) {
-			glBindTexture(GL_TEXTURE_3D, texture3D_IDs[i]);
-			glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA32F, gridX, gridY, gridZ);
-		}
+	for (int i = 0; i < 4; i++) {
+		glBindTexture(GL_TEXTURE_3D, texture3D_IDs[i]);
+		glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA32F, gridX, gridY, gridZ);
 	}
+}
 
-	std::vector<GPU_Trig> trigData;
-
+void SHLM::GetMeshTrianglesAll(std::vector<GPU_Trig>& trigData) {
 	//// Get Triangles From All Meshes
 
 	const auto& BlueprintData = engine->getScene()->GetBlueprints();
+
+	std::cout << "\n\n BLUEPRINTS /////////////////////// " << BlueprintData.size() << "\n\n\n";
 
 	// each matrix is an instance model matrix
 	const ArrayOrganizer<InstanceData>& MatrixOrg = engine->getScene()->GetMatrixOrganizer();
@@ -161,7 +156,23 @@ void SHLM::Load_Cubemap_GPU_ComputeShader() {
 			}
 		}
 	}
+}
 
+void SHLM::Load_Cubemap_GPU_ComputeShader() {
+
+	const int gridX = VoxelGrid.GetGridX();
+	const int gridY = VoxelGrid.GetGridY();
+	const int gridZ = VoxelGrid.GetGridZ();
+
+	const AVector3 worldMin = VoxelGrid.GetWorldMin();
+	const AVector3 worldMax = VoxelGrid.GetWorldMax();
+
+	ComputeShadersInit("/ComputeShaders/VoxelizeMesh.comp", "/ComputeShaders/SH_VoxelVis.comp");
+	SH_Textures_Init(gridX, gridY, gridZ);
+
+	std::vector<GPU_Trig> trigData;
+
+	GetMeshTrianglesAll(trigData);
 
 	////
 
@@ -186,9 +197,9 @@ void SHLM::Load_Cubemap_GPU_ComputeShader() {
 
 	VoxelizeMeshes.Activate();
 	VoxelizeMeshes.SetInt("triangleCount", (int)trigData.size());
-	BakeVoxels.SetUniformVector3("worldMin", worldMin);
-	BakeVoxels.SetUniformVector3("worldMax", worldMax);
-	BakeVoxels.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
+	VoxelizeMeshes.SetUniformVector3("worldMin", worldMin);
+	VoxelizeMeshes.SetUniformVector3("worldMax", worldMax);
+	VoxelizeMeshes.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
 	VoxelizeMeshes.BindSSBO<0>(idxTrigBuffer);
 	VoxelizeMeshes.BindSSBO<1>(idxVoxelInsIDs);
 
@@ -219,6 +230,52 @@ void SHLM::Load_Cubemap_GPU_ComputeShader() {
 	glDeleteBuffers(1, &idxBlockerBuffer);
 	glDeleteBuffers(1, &idxTrigBuffer);
 	glDeleteBuffers(1, &idxVoxelInsIDs);
+}
+
+void SHLM::Load_Cubemap_GPU_ComputeShader_Precise() {
+	const int gridX = VoxelGrid.GetGridX();
+	const int gridY = VoxelGrid.GetGridY();
+	const int gridZ = VoxelGrid.GetGridZ();
+
+	const AVector3 worldMin = VoxelGrid.GetWorldMin();
+	const AVector3 worldMax = VoxelGrid.GetWorldMax();
+
+	GenTextures_Cubemap();
+
+	BakeVoxels.Setup((path + "/ComputeShaders/SH_preciseMesh.comp").c_str());
+
+	idxTrigBuffer = VoxelizeMeshes.CreateSSBO();
+
+	SH_Textures_Init(gridX, gridY, gridZ);
+
+	std::vector<GPU_Trig> trigData;
+
+	GetMeshTrianglesAll(trigData);
+
+	std::cout << "\n\nTRIGS /////////////////////// " << trigData.size() << "\n\n\n";
+
+	//// Blockers are now triagnles of the mesh
+
+	BakeVoxels.SetDataSSBO<GPU_Trig>(trigData, (int)trigData.size(), idxTrigBuffer);
+
+	BakeVoxels.Activate();
+
+	BakeVoxels.SetInt("TrigCount", (int)trigData.size());
+	BakeVoxels.SetUniformVector3("worldMin", worldMin);
+	BakeVoxels.SetUniformVector3("worldMax", worldMax);
+	BakeVoxels.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
+	// Bindings 0-3 are reserved for our textures
+	BakeVoxels.BindSSBO<4>(idxTrigBuffer);
+
+	// Bind texture3Ds
+	for (int i = 0; i < 4; i++) {
+		glBindImageTexture(i, texture3D_IDs[i], 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	}
+
+	glDispatchCompute(gridX / 4, gridY / 4, gridZ / 4);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+	glDeleteBuffers(1, &idxTrigBuffer);
 }
 
 void SHLM::Upload_Cubemap() {
@@ -260,12 +317,6 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar) {
 
 	SH_Program.Activate();
 	engine->VAO_1.Bind();
-
-	GLint blockersLoc = SH_Program.GetUniformLocation("Blockers");
-	glUniform1i(blockersLoc, 0);
-
-	GLint countLoc = SH_Program.GetUniformLocation("BlockerCount");
-	glUniform1i(countLoc, BlockerCountOBJ);
 
 	engine->registerCameraInput(FOVdeg, zNear, zFar);
 
