@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Scene.h"
+#include <execution>
+#include <numeric>
+#include <algorithm>
+#include <future>
 
 class Scene;
 

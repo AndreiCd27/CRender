@@ -1,7 +1,6 @@
 
 #include "Tile.h"
 
-#include <execution>
 
 /////////////////////////////////////////////////////////////////////
 // 
@@ -207,19 +206,22 @@ void Scene::ExecuteInstancePool() {
 	std::vector<Instance>& insArray = insArrayOrg.GetMultiArrayModifiable();
 	std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArrayModifiable();
 
+	std::vector<std::future<void>> futures;
+	futures.reserve(insArray.size());
 	
-	std::vector<int> indices(insArray.size());
-	std::iota(indices.begin(), indices.end(), 0);
-	
-	std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&](int i) {
-		auto& ins = insArray[i];
-		auto& data = matArray[i];
-		if (!ins.UpToDate) {
-			ins.SetDataMatrix(data);
-			ins.SetDataColor(data);
-			ins.UpToDate = true;
-		}
-		});
+	for (int i = 0; i < (int)insArray.size(); i++) {
+		futures.push_back(std::async(std::launch::async, [&insArray, &matArray, i]() {
+			if (!insArray[i].UpToDate) {
+				insArray[i].SetDataMatrix(matArray[i]);
+				insArray[i].SetDataColor(matArray[i]);
+				insArray[i].UpToDate = true;
+			}
+			}));
+	}
+
+	for (auto& f : futures) {
+		f.get();
+	}
 	
 }
 

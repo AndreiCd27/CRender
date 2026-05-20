@@ -72,7 +72,7 @@ public:
 	double Compute(double x) const {
 		// P<M,M>(x) = ((-1)^M) * (2*M - 1)!! * (1-x*x)^(M/2)
 		double PMM = 1.0f;
-		if (M > 0) {
+		if constexpr (M > 0) {
 			double xsq = sqrt((1.0f - x) * (1.0f + x));
 			double pow_xsq = 1.0f;
 			for (int ord = 0; ord < M; ord++) {
@@ -80,16 +80,20 @@ public:
 			}
 			PMM = FactorialTerm * ((M % 2 == 0) ? 1.0f : -1.0f) * pow_xsq;
 		}
-		if (L == M) return PMM;
-		double P_Mp1_M = x * (2.0f * M + 1.0f) * PMM; // P<M+1,M>(x)
-		if (L == M + 1) return P_Mp1_M;
-		double res = 0.0f;
-		for (int i = M + 2; i <= L; i++) {
-			res = ((2.0f * i - 1.0f) * x * P_Mp1_M - (i + M - 1.0f) * PMM) / (i - M);
-			PMM = P_Mp1_M;
-			P_Mp1_M = res;
+		if constexpr (L == M) return PMM;
+		if constexpr (L != M) {
+			double P_Mp1_M = x * (2.0f * M + 1.0f) * PMM; // P<M+1,M>(x)
+			if constexpr (L == M + 1) return P_Mp1_M;
+			if constexpr (L != M + 1) {
+				double res = 0.0f;
+				for (int i = M + 2; i <= L; i++) {
+					res = ((2.0f * i - 1.0f) * x * P_Mp1_M - (i + M - 1.0f) * PMM) / (i - M);
+					PMM = P_Mp1_M;
+					P_Mp1_M = res;
+				}
+				return res;
+			}
 		}
-		return res;
 	}
 };
 
@@ -121,11 +125,11 @@ public:
 	double Compute(double theta, double phi) const override {
 		double P_at_tetha = P.Compute(cos(theta));
 
-		if (M == 0) return NormalizationTerm * P_at_tetha;
+		if constexpr (M == 0) return NormalizationTerm * P_at_tetha;
 
-		if (M > 0) return sqrt2 * NormalizationTerm * cos(M * phi) * P_at_tetha;
+		if constexpr (M > 0) return sqrt2 * NormalizationTerm * cos(M * phi) * P_at_tetha;
 
-		return sqrt2 * NormalizationTerm * sin(-M * phi) * P_at_tetha;
+		if constexpr (M < 0) return sqrt2 * NormalizationTerm * sin(-M * phi) * P_at_tetha;
 	}
 
 	double ComputeLegendre(double x) const override {
@@ -135,7 +139,7 @@ public:
 	void ComputeConstantsForAllM(float* out, const int i) const override {
 		for (int m = -L; m <= L; m++) {
 			float val;
-			if (M == 0) {
+			if constexpr (M == 0) {
 				val = NormalizationTerm;
 			}
 			else {

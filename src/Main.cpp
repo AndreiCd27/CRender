@@ -77,9 +77,6 @@ int main() {
 
     shlm.Load_Cubemap_GPU_ComputeShader_Extended();
 
-
-    auto b_compute_t0 = std::chrono::high_resolution_clock::now();
-
     auto ims = ImageService::GetService();
 
     auto IMG = ims->CreateImage(IMG_TYPE::PNG, "resources/cat_coding.png");
