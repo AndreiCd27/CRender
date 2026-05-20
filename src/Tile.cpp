@@ -187,6 +187,7 @@ void Scene::ExecuteInstancePool() {
 				userRef->Rotation = ins.Rotation;
 				userRef->Size = ins.Size;
 				userRef->Parent = ins.Parent;
+				userRef->SetEID(ins.GetEID());
 				
 				//std::cout << "Instance | HandleIndex = " << ptr->HIndex << ", HandleOffset = " << ptr->HOffset<<"\n";
 				//std::cout << ins_shr_ptr->GetTag() << "\n";
@@ -206,7 +207,7 @@ void Scene::ExecuteInstancePool() {
 	std::vector<Instance>& insArray = insArrayOrg.GetMultiArrayModifiable();
 	std::vector<InstanceData>& matArray = matArrayOrg.GetMultiArrayModifiable();
 
-	// Creăm un vector de indecși pentru a itera în paralel
+	
 	std::vector<int> indices(insArray.size());
 	std::iota(indices.begin(), indices.end(), 0);
 	

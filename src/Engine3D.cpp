@@ -316,7 +316,7 @@ void Engine3D::DrawAllInstances() {
 }
 
 void Engine3D::shadowPass() {
-	glBindFramebuffer(GL_FRAMEBUFFER, depthTextureObject.FBO_ID);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthTextureObject.GetFBO_ID());
 	glViewport(0, 0, 4096, 4096);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -361,7 +361,7 @@ void Engine3D::renderPass(float FOVdeg, float zNear, float zFar) {
 
 	// Activate Depth Texture
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthTextureObject.depthTexture);
+	glBindTexture(GL_TEXTURE_2D, depthTextureObject.GetTexID());
 	
 	DrawAllInstances();
 	
@@ -379,11 +379,21 @@ void Engine3D::RenderInstances(float timeOfDay) {
 
 	initGameFrame(timeOfDay);
 
+	if (cfg.PreRenderRequest != nullptr) {
+		//std::cout << "Executing Pre Render Request!\n";
+		cfg.PreRenderRequest->Exec(); 
+	}
+
 	if (cfg.RenderOverride) {
 
 		cfg.Exec(RENDER_INSTANCES_STAGE);
 
 		//std::cout << "Executed Render Override \n";
+
+		if (cfg.PostRenderRequest != nullptr) {
+			//std::cout << "Executing Post Render Request!\n";
+			cfg.PostRenderRequest->Exec();
+		}
 		
 		//Swap BACK BUFFER with FRONT BUFFER
 		glfwSwapBuffers(window.getWindow());
@@ -396,11 +406,18 @@ void Engine3D::RenderInstances(float timeOfDay) {
 	shadowPass();
 	renderPass(45.0f, 0.1f, 1000.0f);
 
+	if (cfg.PostRenderRequest != nullptr) {
+		//std::cout << "Executing Post Render Request!\n";
+		cfg.PostRenderRequest->Exec();
+	}
+
 	//Swap BACK BUFFER with FRONT BUFFER
 	glfwSwapBuffers(window.getWindow());
 	// Get events (for controls, event handling, closing, etc.)
 	glfwPollEvents();
+
 }
+
 /* FUNCTIONS MAY BE USED AT A LATER TIME WHEN RENDERING ACCOUNTS FOR VISIBLE TILES
 Tile* Engine3D::getVisibleCameraFrustum() {
 	return MainScene.FindTileForPosition(

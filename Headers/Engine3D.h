@@ -26,7 +26,7 @@ private:
 	Camera SunCamera = Camera(AVector3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
 	Scene MainScene;
 
-	Texture depthTextureObject;
+	ShadowSampler depthTextureObject;
 
 	// Shader
 	Shader shaderProgram;

@@ -6,10 +6,19 @@
 #include <tuple>
 #include <string>
 
+// Abstract class that removes the need for args templates
+// Templates are not explicitly said in other classes,
+// And lets any service/main.cpp implementation set them
+// And be evaluated at compile time
+/* EXAMPLE:
+ class ActionContainer {
+	std::vector<std::shared_ptr<AbstractFunc>> ACTIONS; <--- No template Args specified
+*/
 class AbstractFunc {
 public:
 	virtual ~AbstractFunc() = default;
 	virtual void Exec() = 0;
+	virtual void Activate() = 0;
 };
 
 template <typename... ArgsT>
@@ -36,6 +45,9 @@ public:
 	}
 	void SetArgs(ArgsT... newARGS) {
 		args = std::make_tuple(newARGS...);
+	}
+	void Activate() override {
+		// Does nothing, reserved for Request class (see Request.h)
 	}
 };
 

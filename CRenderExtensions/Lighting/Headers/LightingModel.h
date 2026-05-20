@@ -7,6 +7,8 @@
 #include "SH.h"
 #include "SH_VoxelGrid.h"
 
+#include <chrono>
+
 #include "Engine3D.h"
 
 // LightingService
@@ -42,13 +44,29 @@ class SHLM : public LightingService {
 
 	GLuint texture3D_IDs[4];
 
-	ComputeShader VoxelizeMeshes, BakeVoxels;
-	GLuint idxTrigBuffer, idxVoxelInsIDs, idxBlockerBuffer;
+	//ComputeShader VoxelizeMeshes, BakeVoxels;
+	GLuint idxTrigBuffer, idxBlockerBuffer;
 
 	void GenTextures_Cubemap();
 
-	void ComputeShadersInit(const std::string& shdrName0, const std::string& shdrName1);
-	void SH_Textures_Init(int gridX, int gridY, int gridZ);
+	//void ComputeShadersInit(const std::string& shdrName0, const std::string& shdrName1);
+	void SH_Textures_Init();
+
+
+	// Helpers for SH_VoxelVis.comp setup
+	// Stage 1: Voxelize mesh surfaces
+	// - Run VoxelizeMeshes3.comp
+	void VoxelizeMeshesFullInside(Texture const* mipmap, Texture const* instances, ComputeShader& VoxelizeMeshCompute);
+	// Stage 2: Voxelized Mesh sphere decomposition
+	// - Run MeshSphereDecomposition.comp
+	void MeshSphereDecomposition(Texture const* mipmap, Texture const* instances, ComputeShader& MeshDecomp, int LODmax);
+	// Stage 3: Compute Visibility Functions for each Voxel into SH-basis
+	// - Run SH_VoxelVis.comp
+	void ComputeCubemapVisibilitySH(Texture const* instances, ComputeShader& VoxelVisCompute);
+
+	// Easy access to these variables
+	const int gridX, gridY, gridZ;
+	const AVector3 worldMin, worldMax;
 
 public:
 
@@ -73,23 +91,10 @@ public:
 
 	void BindToEngine(float FOVdeg, float zNear, float zFar);
 
-	void SetBlockerSKY(float phi, float theta, float radius, float dist);
-	void SetBlockerOBJ(float x, float y, float z, float radius, int insID);
-
 	//
-
-	void Load_Cubemap_MultiThreaded();
-	// FASTER
-	void Load_Cubemap_GPU_ComputeShader();
-	// MORE PRECISE
-	void Load_Cubemap_GPU_ComputeShader_Precise();
-
-	void Upload_Cubemap();
+	void Load_Cubemap_GPU_ComputeShader_Extended();
 
 	////////////////////////////////////////////////////////////////////////////////////
-
-
-	void shadowMaskPass(float FOVdeg, float zNear, float zFar);
 
 	void SH_renderPass(float FOVdeg, float zNear, float zFar);
 

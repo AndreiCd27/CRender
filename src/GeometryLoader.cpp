@@ -10,6 +10,21 @@ Entity::Entity(Scene* scene, const std::string& _TagName) : TagName(_TagName) {
 	contor++;
 }
 
+Entity::Entity(const Entity& other) {
+	this->ParentScene = other.ParentScene;
+	this->TagName = other.TagName;
+	this->EID = other.EID; // copy EID
+}
+
+Entity& Entity::operator=(const Entity& other) {
+	if (this != &other) {
+		this->ParentScene = other.ParentScene;
+		this->TagName = other.TagName;
+		this->EID = other.EID; // copy EID
+	}
+	return *this;
+}
+
 const std::string& Entity::GetTag() const {
 	return TagName;
 }

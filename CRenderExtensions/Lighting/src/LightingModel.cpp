@@ -4,7 +4,9 @@
 const std::string path = "CRenderExtensions/Lighting";
 
 SHLM::SHLM(Engine3D* engine, EngineConfig* config, AVector3 VoxelResolution, AVector3 WorldMin, AVector3 WorldMax)
-	: VoxelGrid(VoxelResolution, WorldMin, WorldMax), LightingService(engine,config)
+	: VoxelGrid(VoxelResolution, WorldMin, WorldMax), LightingService(engine,config),
+	gridX((int)VoxelResolution.x), gridY((int)VoxelResolution.y), gridZ((int)VoxelResolution.z),
+	worldMin(WorldMin), worldMax(WorldMax)
 {
 
 	SphericalHarmonics = new SH<SH_Order>();
@@ -12,8 +14,6 @@ SHLM::SHLM(Engine3D* engine, EngineConfig* config, AVector3 VoxelResolution, AVe
 	SH_SKY_Blockers = new Blockers<MAX_BLOCKER_COUNT>;
 
 	SH_Program.Setup((path+"/Shaders/SH.vert").c_str(), (path + "/Shaders/SH.frag").c_str());
-
-	//shadowMaskProgram.Setup((path + "/Shaders/instance.vert").c_str(), (path + "/Shaders/shadowMask.frag").c_str());
 
 }
 
@@ -26,30 +26,6 @@ void SHLM::BindToEngine(float FOVdeg, float zNear, float zFar) {
 	config->RenderOverride = true;
 
 	config->AddAction(RENDER_INSTANCES_STAGE, SH_f, FOVdeg, zNear, zFar);
-}
-
-void SHLM::SetBlockerSKY(float phi, float theta, float radius, float dist) {
-	if (SH_SKY_Blockers != nullptr) {
-
-		SH_SKY_Blockers->phi[BlockerCountSKY] = phi;
-		SH_SKY_Blockers->theta[BlockerCountSKY] = theta;
-		SH_SKY_Blockers->radius[BlockerCountSKY] = radius;
-		SH_SKY_Blockers->dist[BlockerCountSKY] = dist;
-
-		BlockerCountSKY++;
-	}
-}
-void SHLM::SetBlockerOBJ(float x, float y, float z, float radius, int insID) {
-	if (SH_OBJ_Blockers != nullptr) {
-
-		SH_OBJ_Blockers->x[BlockerCountOBJ] = x;
-		SH_OBJ_Blockers->y[BlockerCountOBJ] = y;
-		SH_OBJ_Blockers->z[BlockerCountOBJ] = z;
-		SH_OBJ_Blockers->r[BlockerCountOBJ] = radius;
-		SH_OBJ_Blockers->insID[BlockerCountOBJ] = insID;
-
-		BlockerCountOBJ++;
-	}
 }
 
 // Called only by Load_Cubemap functions
@@ -68,40 +44,7 @@ void SHLM::GenTextures_Cubemap() {
 	}
 }
 
-void SHLM::Load_Cubemap_MultiThreaded() {
-
-	GenTextures_Cubemap();
-
-	VoxelGrid.VoxelizeBlockers(*SH_OBJ_Blockers, BlockerCountOBJ);
-
-	VoxelGrid.Bake3DGrid(*SH_OBJ_Blockers, BlockerCountOBJ, *SphericalHarmonics);
-
-	for (int i = 0; i < 4; i++) {
-		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F,
-			VoxelGrid.GetGridX(), // Width (x)
-			VoxelGrid.GetGridY(), // Height (y)
-			VoxelGrid.GetGridZ(), // Depth (z)
-			0, GL_RGBA, GL_FLOAT,
-			VoxelGrid.volumeData[i].data()
-		);
-	}
-	glBindTexture(GL_TEXTURE_3D, 0);
-}
-
-void SHLM::ComputeShadersInit(const std::string& shdrName0, const std::string& shdrName1) {
-	if (VoxelizeMeshes.GetCompleteStatus()) return;
-
-	GenTextures_Cubemap();
-
-	VoxelizeMeshes.Setup((path + shdrName0).c_str());
-	BakeVoxels.Setup((path + shdrName1).c_str());
-
-	idxTrigBuffer = VoxelizeMeshes.CreateSSBO();
-	idxVoxelInsIDs = VoxelizeMeshes.CreateSSBO();
-	idxBlockerBuffer = VoxelizeMeshes.CreateSSBO();
-}
-
-void SHLM::SH_Textures_Init(int gridX, int gridY, int gridZ) {
+void SHLM::SH_Textures_Init() {
 
 	for (int i = 0; i < 4; i++) {
 		glBindTexture(GL_TEXTURE_3D, texture3D_IDs[i]);
@@ -113,8 +56,6 @@ void SHLM::GetMeshTrianglesAll(std::vector<GPU_Trig>& trigData) {
 	//// Get Triangles From All Meshes
 
 	const auto& BlueprintData = engine->getScene()->GetBlueprints();
-
-	std::cout << "\n\n BLUEPRINTS /////////////////////// " << BlueprintData.size() << "\n\n\n";
 
 	// each matrix is an instance model matrix
 	const ArrayOrganizer<InstanceData>& MatrixOrg = engine->getScene()->GetMatrixOrganizer();
@@ -136,7 +77,7 @@ void SHLM::GetMeshTrianglesAll(std::vector<GPU_Trig>& trigData) {
 		// Ref: int handleID = ins.Template->GetID() | (ins.tile->GetTileID() << Tile::shiftComponent);
 		const Blueprint* B = BlueprintData[matHandle.id & Blueprint::GetSafeBlueprintCount()];
 		//const int VertHandleID = B->GetVerticesHandleID();
-		const int IndHandleID = B->GetVerticesHandleID();
+		const int IndHandleID = B->GetIndiciesHandleID();
 
 		const Handle& IndHandle = VertIndOrg.GetHandleData(IndHandleID);
 		//const Handle& VertHandle = VertOrg.GetHandleData(VertHandleID);
@@ -144,166 +85,203 @@ void SHLM::GetMeshTrianglesAll(std::vector<GPU_Trig>& trigData) {
 		for (int i = matHandle.offset; i < matHandle.offset + matHandle.size; i++) {
 			const auto& InstanceMatrix = MatrixArray[i];
 			int InsID = InstanceArray[i].GetEID();
-
+			
+			int localIDX = 0;
 			for (int j = IndHandle.offset; j < IndHandle.offset + IndHandle.size; j++) {
 				int Vidx = VertIndArray[j];
 				const AVertex& V = VertArray[Vidx];
 				glm::vec4 glmV = InstanceMatrix.matrix * glm::vec4(V.POS.x, V.POS.y, V.POS.z, 1.0f);
-				TempV[j % 3] = AVector3(glmV.x, glmV.y, glmV.z);
-				if (j % 3 == 2) {
+				TempV[localIDX] = AVector3(glmV.x, glmV.y, glmV.z);
+				if (localIDX == 2) {
 					trigData.push_back(GPU_Trig(TempV[0], TempV[1], TempV[2], InsID));
+					localIDX = 0;
+				}
+				else {
+					localIDX++;
 				}
 			}
 		}
 	}
+
 }
 
-void SHLM::Load_Cubemap_GPU_ComputeShader() {
-
-	const int gridX = VoxelGrid.GetGridX();
-	const int gridY = VoxelGrid.GetGridY();
-	const int gridZ = VoxelGrid.GetGridZ();
-
-	const AVector3 worldMin = VoxelGrid.GetWorldMin();
-	const AVector3 worldMax = VoxelGrid.GetWorldMax();
-
-	ComputeShadersInit("/ComputeShaders/VoxelizeMesh.comp", "/ComputeShaders/SH_VoxelVis.comp");
-	SH_Textures_Init(gridX, gridY, gridZ);
+void SHLM::VoxelizeMeshesFullInside(Texture const* mipmap, Texture const* instances, ComputeShader& VoxelizeMeshCompute) {
 
 	std::vector<GPU_Trig> trigData;
-
 	GetMeshTrianglesAll(trigData);
 
-	////
+	VoxelizeMeshCompute.SetDataSSBO<GPU_Trig>(trigData, (int)trigData.size(), idxTrigBuffer);
 
-	VoxelizeMeshes.SetDataSSBO<GPU_Trig>(trigData, (int)trigData.size(), idxTrigBuffer);
+	VoxelizeMeshCompute.Activate();
+	VoxelizeMeshCompute.SetInt("triangleCount", (int)trigData.size());
+	VoxelizeMeshCompute.SetUniformVector3("worldMin", worldMin);
+	VoxelizeMeshCompute.SetUniformVector3("worldMax", worldMax);
+	VoxelizeMeshCompute.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
+	VoxelizeMeshCompute.BindSSBO<0>(idxTrigBuffer);
 
-	////
+	glBindImageTexture(0, mipmap->GetTexID(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R16F);
 
-	std::vector<GPU_Blocker> blockerData;
-	blockerData.resize(BlockerCountOBJ);
+	glBindImageTexture(1, instances->GetTexID(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32I);
 
-	for (int i = 0; i < BlockerCountOBJ; i++) {
-		blockerData[i] = {
-			glm::vec4(SH_OBJ_Blockers->x[i],SH_OBJ_Blockers->y[i],SH_OBJ_Blockers->z[i],SH_OBJ_Blockers->r[i]),
-			glm::vec4(SH_OBJ_Blockers->insID[i])
-		};
-	}
 
-	BakeVoxels.SetDataSSBO<GPU_Blocker>(blockerData, (int)blockerData.size(), idxBlockerBuffer);
+	int numGroupsX = (gridX + 15) / 16;
+	int numGroupsY = 1;
+	int numGroupsZ = (gridZ + 15) / 16;
 
-	// For Voxels, we allocate empty space
-	VoxelizeMeshes.AllocateEmptySSBO<int>(gridX * gridY * gridZ, idxVoxelInsIDs);
+	glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 
-	VoxelizeMeshes.Activate();
-	VoxelizeMeshes.SetInt("triangleCount", (int)trigData.size());
-	VoxelizeMeshes.SetUniformVector3("worldMin", worldMin);
-	VoxelizeMeshes.SetUniformVector3("worldMax", worldMax);
-	VoxelizeMeshes.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
-	VoxelizeMeshes.BindSSBO<0>(idxTrigBuffer);
-	VoxelizeMeshes.BindSSBO<1>(idxVoxelInsIDs);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_FRAMEBUFFER_BARRIER_BIT);
+	//glFinish();
 
-	int clearVal = -1; // Reset Buffer Data
-	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32I, GL_RED_INTEGER, GL_INT, &clearVal);
+}
 
-	int numGroups = (trigData.size() + 127) / 128;
-	glDispatchCompute(numGroups, 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+void SHLM::MeshSphereDecomposition(Texture const* mipmap, Texture const* instances, ComputeShader& MeshDecomp, int LODmax) {
 
-	BakeVoxels.Activate();
-	BakeVoxels.SetInt("BlockerCount", BlockerCountOBJ);
-	BakeVoxels.SetUniformVector3("worldMin", worldMin);
-	BakeVoxels.SetUniformVector3("worldMax", worldMax);
-	BakeVoxels.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
+	auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+
+	MeshDecomp.Activate();
+
+	LODmax = 3;
+
+	int numGroupsX = (gridX + 3) / 4;
+	int numGroupsY = (gridY + 3) / 4;
+	int numGroupsZ = (gridZ + 3) / 4;
+
+	int maxSpheres = 100000;
+	size_t bufferSize = sizeof(uint32_t) + (maxSpheres * sizeof(GPU_Blocker));
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, idxBlockerBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_COPY);
+
+	uint32_t zeroCount = 0;
+	glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, sizeof(uint32_t), GL_RED_INTEGER, GL_UNSIGNED_INT, &zeroCount);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, idxBlockerBuffer);
+
+	MeshDecomp.SetInt("LODmax", LODmax);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_3D, mipmap->GetTexID());
+
+	MeshDecomp.SetInt("VoxelTex", 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_3D, instances->GetTexID());
+
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	MeshDecomp.SetInt("InstanceTex", 1);
+
+	glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+	//glFinish();
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, idxBlockerBuffer);
+	uint32_t debugSphereCount = 0;
+	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(uint32_t), &debugSphereCount);
+
+	std::cout << ">>> DEBUG: Generated " << debugSphereCount << " sphere blockers in VRAM.\n";
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind
+
+	auto b_compute_t1 = std::chrono::high_resolution_clock::now();
+
+	std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
+
+	//std::cout << "\n|_______ 3) MeshSphereDecomposition TIME: " << duration.count() << " ms _____________|\n\n";
+}
+
+void SHLM::ComputeCubemapVisibilitySH(Texture const* instances, ComputeShader& VoxelVisCompute) {
+
+	auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+
+	VoxelVisCompute.Activate();
+
+	VoxelVisCompute.SetUniformVector3("worldMin", worldMin);
+	VoxelVisCompute.SetUniformVector3("worldMax", worldMax);
+	VoxelVisCompute.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
 	// Bindings 0-3 are reserved for our textures
-	BakeVoxels.BindSSBO<4>(idxBlockerBuffer);
-	BakeVoxels.BindSSBO<5>(idxVoxelInsIDs); // Reuse SSBO
+	VoxelVisCompute.BindSSBO<4>(idxBlockerBuffer);
 
 	// Bind texture3Ds
 	for (int i = 0; i < 4; i++) {
 		glBindImageTexture(i, texture3D_IDs[i], 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	}
 
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_3D, instances->GetTexID());
+	VoxelVisCompute.SetInt("InstanceTex", 4);
+
 	glDispatchCompute(gridX / 4, gridY / 4, gridZ / 4);
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
+	//glFinish();
+
+	auto b_compute_t1 = std::chrono::high_resolution_clock::now();
+
+	std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
+
+	//std::cout << "\n|_______ 4) ComputeCubemapVisibilitySH TIME: " << duration.count() << " ms _____________|\n\n";
+	
+}
+
+void SHLM::Load_Cubemap_GPU_ComputeShader_Extended() {
+
+	auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+
+	GenTextures_Cubemap();
+	SH_Textures_Init();
+
+	ComputeShader BakeVoxels;
+	ComputeShader MeshFill;
+	ComputeShader MeshDecomp;
+
+	BakeVoxels.Setup((path + "/ComputeShaders/SH_VoxelVis.comp").c_str());
+	MeshFill.Setup((path + "/ComputeShaders/FullVoxelFill.comp").c_str());
+	MeshDecomp.Setup((path + "/ComputeShaders/MeshSphereDecomposition.comp").c_str());
+
+	idxTrigBuffer = MeshFill.CreateSSBO();
+	idxBlockerBuffer = MeshDecomp.CreateSSBO();
+
+	Texture3D<GL_R16F, 1> VOXEL_MIPMAP(gridX, gridY, gridZ, false);
+
+	Texture3D<GL_R32I, 1> VOXEL_INSTANCES(gridX, gridY, gridZ, false);
+
+	std::vector<int> clearData(gridX * gridY * gridZ, -1);
+
+	glBindTexture(GL_TEXTURE_3D, VOXEL_INSTANCES.GetTexID());
+	glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, gridX, gridY, gridZ, GL_RED_INTEGER, GL_INT, clearData.data());
+	glBindTexture(GL_TEXTURE_3D, 0);
+
+	VoxelizeMeshesFullInside(&VOXEL_MIPMAP, &VOXEL_INSTANCES, MeshFill);
+
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	//glFinish();
+
+	VOXEL_MIPMAP.VerifyVoxelDataCPU(gridX, gridY, gridZ);
+
+	VOXEL_MIPMAP.Make_Mipmap();
+
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
+	int maxLOD = VOXEL_MIPMAP.GetMaxLOD();
+	//std::cout << " || MAX LEVEL OF DETAIL (LOD) = " << maxLOD << "\n";
+
+	MeshSphereDecomposition(&VOXEL_MIPMAP, &VOXEL_INSTANCES, MeshDecomp, maxLOD);
+	ComputeCubemapVisibilitySH(&VOXEL_INSTANCES, BakeVoxels);
 
 	glDeleteBuffers(1, &idxBlockerBuffer);
 	glDeleteBuffers(1, &idxTrigBuffer);
-	glDeleteBuffers(1, &idxVoxelInsIDs);
-}
 
-void SHLM::Load_Cubemap_GPU_ComputeShader_Precise() {
-	const int gridX = VoxelGrid.GetGridX();
-	const int gridY = VoxelGrid.GetGridY();
-	const int gridZ = VoxelGrid.GetGridZ();
+	auto b_compute_t1 = std::chrono::high_resolution_clock::now();
 
-	const AVector3 worldMin = VoxelGrid.GetWorldMin();
-	const AVector3 worldMax = VoxelGrid.GetWorldMax();
+	std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
 
-	GenTextures_Cubemap();
-
-	BakeVoxels.Setup((path + "/ComputeShaders/SH_preciseMesh.comp").c_str());
-
-	idxTrigBuffer = VoxelizeMeshes.CreateSSBO();
-
-	SH_Textures_Init(gridX, gridY, gridZ);
-
-	std::vector<GPU_Trig> trigData;
-
-	GetMeshTrianglesAll(trigData);
-
-	std::cout << "\n\nTRIGS /////////////////////// " << trigData.size() << "\n\n\n";
-
-	//// Blockers are now triagnles of the mesh
-
-	BakeVoxels.SetDataSSBO<GPU_Trig>(trigData, (int)trigData.size(), idxTrigBuffer);
-
-	BakeVoxels.Activate();
-
-	BakeVoxels.SetInt("TrigCount", (int)trigData.size());
-	BakeVoxels.SetUniformVector3("worldMin", worldMin);
-	BakeVoxels.SetUniformVector3("worldMax", worldMax);
-	BakeVoxels.SetUniformVector3_int("gridRes", glm::ivec3(gridX, gridY, gridZ));
-	// Bindings 0-3 are reserved for our textures
-	BakeVoxels.BindSSBO<4>(idxTrigBuffer);
-
-	// Bind texture3Ds
-	for (int i = 0; i < 4; i++) {
-		glBindImageTexture(i, texture3D_IDs[i], 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-	}
-
-	glDispatchCompute(gridX / 4, gridY / 4, gridZ / 4);
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-	glDeleteBuffers(1, &idxTrigBuffer);
-}
-
-void SHLM::Upload_Cubemap() {
-
-	glGenTextures(4, texture3D_IDs);
-
-	for (int i = 0; i < 4; i++) {
-		glBindTexture(GL_TEXTURE_3D, texture3D_IDs[i]);
-
-		// Texture Parameters
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-		// Loading the data
-		// gridX = width, gridZ = length, gridY = height / depth (our altitude layers)
-
-		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F,
-			VoxelGrid.GetGridX(), // Width (x)
-			VoxelGrid.GetGridY(), // Height (y)
-			VoxelGrid.GetGridZ(), // Depth (z)
-			0, GL_RGBA, GL_FLOAT,
-			VoxelGrid.volumeData[i].data()
-		);
-	}
-	glBindTexture(GL_TEXTURE_3D, 0);
+	//std::cout << "\n|_______ Load_Cubemap_GPU_ComputeShader TOTAL TIME: " << duration.count() << " ms _____________|\n\n";
 }
 
 SHLM::~SHLM() {
@@ -353,20 +331,6 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar) {
 	//float ZHtoSH[4]; SphericalHarmonics->GetCombinedZHtoSH(ZHtoSH);
 	//SH_Program.SetUniformVec4Array("ZHtoSH", ZHtoSH, 4);
 
-	static bool debug_once = true;
-	if (debug_once) {
-		std::cout << "\n\nDEBUG SH SOFT SHADOWS \n\n";
-		int ind = 0;
-		for (int l = 0; l <= SH_Order; l++) {
-			for (int m = -l; m <= l; m++) {
-				std::cout << "Sun SH coefficient at L = " << l << ", M = " << m << " : " << LightSH[ind] << "\n";
-				ind++;
-			}
-		}
-		debug_once = false;
-	}
-
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glEnable(GL_DEPTH_TEST);
@@ -384,32 +348,3 @@ void SHLM::SH_renderPass(float FOVdeg, float zNear, float zFar) {
 	engine->DrawAllInstances();
 }
 
-/*
-void SHLM::shadowMaskPass(float FOVdeg, float zNear, float zFar, Engine3D* e)
-{
-	shadowMaskProgram.Activate(); // Masking ACTUAL shadow over geometry
-	e->VAO_1.Bind();
-
-	e->registerCameraInput(FOVdeg, zNear, zFar);
-	e->SunCamera.LightMatrix(500.0f, shadowMaskProgram, true, e->UserCamera.Position);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, e->depthTextureObject.depthTexture);
-	glUniform1i(e->instanceProgram.GetUniformLocation("shadowMap"), 0);
-
-	// --- BLENDING ---
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_DST_COLOR, GL_ZERO);
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL); // Draw over geometry from SH_Pass
-	glDepthMask(GL_FALSE);  //
-
-	glCullFace(GL_BACK);
-
-	e->DrawAllInstances();
-
-	glDisable(GL_BLEND);
-	glDepthMask(GL_TRUE);
-}
-*/

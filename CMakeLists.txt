@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(CRender)
+project(CRender VERSION 1.0.0)
 
 # ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,6 +49,7 @@ endif()
 
 #Additional Cmakelists
 add_subdirectory(Libraries/include/glm)
+add_subdirectory(Libraries/include/TinyTIFF)
 
 #add_subdirectory(Libraries/glfw)
 
@@ -117,9 +118,12 @@ add_executable(${PROJECT_NAME} src/Main.cpp
 target_include_directories(${PROJECT_NAME} PRIVATE CRenderExtensions)
 target_include_directories(${PROJECT_NAME} PRIVATE Headers)
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE Libraries/include)
+target_include_directories(${PROJECT_NAME} PRIVATE Libraries/include/TinyTIFF)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/Libraries/include/TinyTIFF)
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     "CRenderExtensions/Lighting/Headers"
+    "CRenderExtensions/ImageService/Headers"
     "Headers"
 )
 
@@ -131,8 +135,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 #target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${GLFW_LIB} ${EXTRA_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE 
-    glad 
-    OpenGL::GL 
+    glad
+    OpenGL::GL
+    TinyTIFF
     ${CMAKE_DL_LIBS}
 )
 
@@ -141,7 +146,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 #           RESOURCES + SHADERS
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/ComputeShaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/CRenderExtensions DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

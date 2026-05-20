@@ -65,6 +65,8 @@ class Entity {
 	static int contor;
 	int EID;
 	std::string TagName = "";
+
+	void SetEID(int id) { this->EID = id; };
 	
 protected:
 	Scene* ParentScene = nullptr;
@@ -72,10 +74,15 @@ public:
 	Entity(Scene* scene, const std::string& _TagName);
 	virtual ~Entity() = default;
 
+	Entity(const Entity& other); // Copy Constructor
+	Entity& operator=(const Entity& other); // Copy Assign
+
 	const std::string& GetTag() const;
 	int GetEID() const;
 
 	virtual void Update() = 0;
+
+	friend class Scene;
 };
 
 // ABSTRACT CLASS TRANSFORM

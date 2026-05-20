@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "LightingModel.h"
+#include "Image.h"
 
 #define scene engine->getScene()
 #define workspace scene->GetWorkspace().lock()
@@ -10,7 +11,6 @@
 Engine3D* engine = Engine3D::GetEngine3D();
 
 int main() {
-
 
     std::cout << "5!! = " << DoubleFactorial(5) << "\n";
 
@@ -36,61 +36,7 @@ int main() {
     // SH soft shadows
 
     SHLM shlm(engine, engine->getCFG(), 
-        AVector3(512,16,512), AVector3(-1024.0f, -32.0f, -1024.0f), AVector3(1024.0f, 32.0f, 1024.0f));
-
-    auto b_compute_t0 = std::chrono::high_resolution_clock::now();
-
-    /*
-    for (int i = 0; i < 500; i++) {
-        float x = (i % 360) / 180.0f * __PI;
-        float y = (i % 180) / 180.0f * __PI;
-        float z = (float)(i % 128 + 120);
-        float r = (float)(i % 8 + 1);
-        shlm.SetBlockerOBJ(x, y, z, r);
-    }
-    */
-    /*
-    // CUBE c2
-    shlm.SetBlockerOBJ(-5.0f, 5.0f, -5.0f,5.0f, 2);
-    shlm.SetBlockerOBJ(5.0f, 5.0f, -5.0f,5.0f, 2);
-    shlm.SetBlockerOBJ(-5.0f, 5.0f, 5.0f,5.0f, 2);
-    shlm.SetBlockerOBJ(5.0f, 5.0f, 5.0f,5.0f, 2);
-
-    shlm.SetBlockerOBJ(-5.0f, 15.0f, -5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(5.0f, 15.0f, -5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(-5.0f, 15.0f, 5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(5.0f, 15.0f, 5.0f,5.0f,2);
-
-    shlm.SetBlockerOBJ(-5.0f, 25.0f, -5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(5.0f, 25.0f, -5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(-5.0f, 25.0f, 5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(5.0f, 25.0f, 5.0f,5.0f,2);
-
-    shlm.SetBlockerOBJ(-5.0f, 35.0f, -5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(5.0f, 35.0f, -5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(-5.0f, 35.0f, 5.0f,5.0f,2);
-    shlm.SetBlockerOBJ(5.0f, 35.0f, 5.0f,5.0f,2);
-
-    // CUBE c3
-    shlm.SetBlockerOBJ(-25.0f, 5.0f, -25.0f,5.0f,3);
-    shlm.SetBlockerOBJ(-15.0f, 5.0f, -25.0f,5.0f,3);
-    shlm.SetBlockerOBJ(-25.0f, 5.0f, -15.0f,5.0f,3);
-    shlm.SetBlockerOBJ(-15.0f, 5.0f, -15.0f,5.0f,3);
-
-    shlm.SetBlockerOBJ(-25.0f, 15.0f, -25.0f,5.0f,3);
-    shlm.SetBlockerOBJ(-15.0f, 15.0f, -25.0f,5.0f,3);
-    shlm.SetBlockerOBJ(-25.0f, 15.0f, -15.0f,5.0f,3);
-    shlm.SetBlockerOBJ(-15.0f, 15.0f, -15.0f,5.0f,3);
-
-
-    shlm.SetBlockerOBJ(50.0f, 25.0f, 50.0f,15.0f,1);
-    */
-
-    auto b_compute_t1 = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
-
-    std::cout << "\nTotal Visbility Function COMPUTE TIME: " << duration.count() << " ms\n\n";
+        AVector3(512,32,512), AVector3(-1024.0f, -16.0f, -1024.0f), AVector3(1024.0f, 48.0f, 1024.0f));
 
     //
 
@@ -100,19 +46,17 @@ int main() {
     // PLANE
     auto c = scene->CreateInstance(cube, "c");
     c->SetPosition(AVector3(0.0f, 0.0f, 0.0f));
-    c->SetSize(AVector3(1024.0f, 0.1f, 1024.0f));
+    c->SetSize(AVector3(500.0f, 6.0f, 500.0f));
 
     auto c2 = scene->CreateInstance(cube, "c");
-    c2->SetPosition(AVector3(0.0f, 20.0f, 0.0f));
-    c2->SetSize(AVector3(20.0f, 40.0f, 20.0f));
-    c2->SetColor(255,0,255,255);
+    c2->SetPosition(AVector3(0.0f, 30.0f, 0.0f));
+    c2->SetSize(AVector3(30.0f, 60.0f, 30.0f));
+    c2->SetColor(255, 0, 255, 255);
 
     auto c3 = scene->CreateInstance(cube, "c");
-    c3->SetPosition(AVector3(-20.0f, 10.0f, -20.0f));
+    c3->SetPosition(AVector3(-30.0f, 10.0f, -20.0f));
     c3->SetSize(AVector3(20.0f, 20.0f, 20.0f));
-    c3->SetColor(0,255,255,255);
-
-    //
+    c3->SetColor(0, 255, 255, 255);
 
     //////////////////////////////
     engine->DEBUG_ArrayOrganizers();
@@ -129,11 +73,31 @@ int main() {
     float t = 8.0f;
 
     // PRE-GAME LOOP ---> ACTIVATE SHLM
-
-    //shlm.Load_Cubemap_GPU_ComputeShader();
-    shlm.Load_Cubemap_GPU_ComputeShader_Precise();
-
     shlm.BindToEngine(45.0f, 0.01f, 1000.0f);
+
+    shlm.Load_Cubemap_GPU_ComputeShader_Extended();
+
+
+    auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+
+    auto ims = ImageService::GetService();
+
+    auto IMG = ims->CreateImage(IMG_TYPE::PNG, "resources/cat_coding.png");
+
+    // UP-scaling, and converting to TIFF at the same time
+    auto IMG2 = ims->CreateImage(IMG_TYPE::TIFF, 1000, 1200, "resources/example.tiff");
+
+    ims->TexAdapter->Resample(*IMG, *IMG2, ims);
+
+    int widwn = IMG.get()->GetWidth();
+    std::cout << "Width img: " << widwn << "\n";
+
+    bool screenshot = false;
+
+    auto IMG3 = ims->CreateImage(IMG_TYPE::TIFF, "resources/screenshot.tiff");
+    Request<IMG_TYPE, int, int, int, int, std::string>* screenshot_request =
+        ims->GetScreenshotRequest(IMG_TYPE::TIFF, IMG3->GetWidth(), IMG3->GetHeight(), 1200, 900, "resources/screenshot.tiff");
+    engine->getCFG()->PostRenderRequest = screenshot_request;
 
     while (!engine->windowShouldClose()) {
 
@@ -143,13 +107,21 @@ int main() {
         );
 
         t += 0.01f;
+
         //std::cout << t / 64.0f * 24.0f << " TIME \n";
+        if (t > 16.0f) {
+            if (!screenshot) {
+                engine->getCFG()->PostRenderRequest->Activate();
+                std::cout << "SCREENSHOT ACTIVATED!  \n";
+                screenshot = true;
+            }
+        }
         if (t > 64.0f) {
             t = 0.0f;
         }
     }
 
-    //scene->DEBUG_PrintInstanceHierarchy(workspace,0,1,true);
+    delete screenshot_request;
 
     engine->EngineTerminate();
 

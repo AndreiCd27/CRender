@@ -22,10 +22,14 @@ out vec4 FragColor;
 
 void main() {
 
+    vec3 N = normalize(vertNormal);
+
+    vec3 biasPos = vertPos.xyz - N;
+
     vec3 uvw;
-    uvw.x = (vertPos.x - WorldMin.x) / (WorldMax.x - WorldMin.x);
-    uvw.z = (vertPos.z - WorldMin.z) / (WorldMax.z - WorldMin.z); // Depth
-    uvw.y = (vertPos.y - WorldMin.y) / (WorldMax.y - WorldMin.y); // Height
+    uvw.x = (biasPos.x - WorldMin.x) / (WorldMax.x - WorldMin.x);
+    uvw.z = (biasPos.z - WorldMin.z) / (WorldMax.z - WorldMin.z); // Depth
+    uvw.y = (biasPos.y - WorldMin.y) / (WorldMax.y - WorldMin.y); // Height
 
     uvw = clamp(uvw, 0.001, 0.999);
 
@@ -42,11 +46,19 @@ void main() {
     Vis += dot(c2, LightSH[2]);
     Vis += dot(c3, LightSH[3]);
 
-    float visibility = clamp(Vis, 0.2, 1.0);
+    float visibility = clamp(Vis, 0.0, 1.0);
 
-    vec3 finalColor = color.rgb * visibility;
+    vec3 L = normalize(LightDir);
+    float lambertianTerm = max(0.2, dot(N, L));
+
+    float ambient = 0.15;
+    float directLight = lambertianTerm * visibility;
+    
+    vec3 finalColor = color.rgb * min(ambient + directLight, 1.0);
 
     FragColor = vec4(finalColor, color.a);
 
-    //FragColor = vec4(uvw,1.0);
+    //FragColor = vec4(vec3(visibility), color.a);
+
+    //FragColor = c0;
 }

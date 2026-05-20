@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Action.h"
+#include "Request.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -44,6 +45,9 @@ class EngineConfig {
 	bool ExecOrderSpecified = false;
 
 public:
+
+	AbstractFunc* PreRenderRequest = nullptr;
+	AbstractFunc* PostRenderRequest = nullptr;
 
 	bool CameraOverride = false;
 	bool RenderOverride = false;
