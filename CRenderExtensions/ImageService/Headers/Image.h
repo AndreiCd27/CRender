@@ -9,8 +9,8 @@
 
 // External Libs: stb & tinytiffwriter //////
 
-#include "stb_image_write.h"
-#include "stb_image.h"
+#include <stb_image_write.h>
+#include <stb_image.h>
 
 #include <tinytiffreader.h>
 #include <tinytiffwriter.h>
@@ -40,6 +40,8 @@ public:
 	virtual IMG_TYPE GetType() const = 0;
 
 	Image(int width, int height, const std::string& _filepath);
+
+	int GetGlobalID() const{ return IMG_ID; }
 
 	int GetWidth() const;
 	int GetHeight() const;
