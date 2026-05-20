@@ -3,7 +3,7 @@
 #include "SH.h"
 #include "GeometryBasics.h"
 
-template <int num, int MaxL>
+template <int MaxL>
 class SHVoxelGrid {
 
 	const int gridX;

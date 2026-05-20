@@ -6,28 +6,28 @@
 #include <stdexcept>
 #include <iostream>
 
-#define DEF_STAGES 7
+constexpr int DEF_STAGES = 7;
 
 // Stage 0 ---> Engine3D::SetupWindow()
-#define WINDOW_SETUP_STAGE 0
+constexpr int WINDOW_SETUP_STAGE = 0;
 
 // Stage 1 ---> Engine3D::SetupShaders()
-#define SHADER_SETUP_STAGE 1
+constexpr int SHADER_SETUP_STAGE = 1;
 
 // Stage 2 ---> Engine3D::setupGeometryArrayObjects()
-#define GEOMETRY_ARRAY_OBJECTS_SETUP_STAGE 2
+constexpr int GEOMETRY_ARRAY_OBJECTS_SETUP_STAGE = 2;
 
 // Stage 3 ---> Engine3D::setupInstanceVBO()
-#define INSTANCE_ARRAY_OBJECTS_SETUP_STAGE 3
+constexpr int INSTANCE_ARRAY_OBJECTS_SETUP_STAGE = 3;
 
 // Stage 4 ---> Engine3D::initGameFrame()
-#define INIT_GAME_FRAME_STAGE 4
+constexpr int INIT_GAME_FRAME_STAGE = 4;
 
 // Stage 5 ---> Engine3D::registerCameraInput()
-#define CAMERA_INPUT_STAGE 5
+constexpr int CAMERA_INPUT_STAGE = 5;
 
 // Stage 6 ---> Engine3D::RenderInstances()
-#define RENDER_INSTANCES_STAGE 6
+constexpr int RENDER_INSTANCES_STAGE = 6;
 
 class ConfigException : public std::runtime_error {
 public:

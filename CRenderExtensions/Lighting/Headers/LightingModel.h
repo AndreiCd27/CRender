@@ -21,9 +21,7 @@ public:
 	LightingService(Engine3D* engine, EngineConfig* config) : engine(engine), config(config) {}
 };
 
-
-#define MAX_BLOCKER_COUNT 65536
-#define SH_Order 3
+constexpr int SH_Order = 3;
 
 // Spherical Harmonic Lighting Model (SHLM)
 
@@ -31,12 +29,8 @@ class SHLM : public LightingService {
 	// For shadow rendering using Spherical Harmonics (see SHEXP.h)
 
 	SH<SH_Order>* SphericalHarmonics = nullptr;
-	BlockerXYZR<MAX_BLOCKER_COUNT>* SH_OBJ_Blockers = nullptr;
-	Blockers<MAX_BLOCKER_COUNT>* SH_SKY_Blockers = nullptr;
-	int BlockerCountOBJ = 0;
-	int BlockerCountSKY = 0;
 
-	SHVoxelGrid<MAX_BLOCKER_COUNT, SH_Order> VoxelGrid;
+	SHVoxelGrid<SH_Order> VoxelGrid;
 
 	Shader SH_Program;
 

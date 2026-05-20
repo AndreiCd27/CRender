@@ -116,7 +116,7 @@ void ImageAdapter::Resample(const Image& FROM, const Texture& TO, ImageService* 
 
     Texture IMG_TEX(fromWidth, fromHeight);
 
-    if (fromDATA.size() < fromWidth * fromHeight * 4) {
+    if ((int)fromDATA.size() < fromWidth * fromHeight * 4) {
         std::cout << "VECTOR TOO SMALL ||||||||||||||||||||||||||||||\n";
         fromDATA.resize(fromWidth * fromHeight * 4, 0);
     }
@@ -477,7 +477,7 @@ Request<IMG_TYPE, int, int, int, int, std::string>* ImageService::GetScreenshotR
 
     Request<IMG_TYPE, int, int, int, int, std::string>* screenshot_request = new Request<IMG_TYPE, int, int, int, int, std::string>();
 
-    screenshot_request->SetImplementation([this, IMG, Width, Height, ScreenWidth, ScreenHeight, filepath](
+    screenshot_request->SetImplementation([this](
         IMG_TYPE imtyp, int w, int h, int sw, int sh, const std::string& f) {
 
         this->Screenshot(imtyp, w, h, sw, sh, f);

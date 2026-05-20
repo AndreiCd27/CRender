@@ -4,14 +4,12 @@
 const std::string path = "CRenderExtensions/Lighting";
 
 SHLM::SHLM(Engine3D* engine, EngineConfig* config, AVector3 VoxelResolution, AVector3 WorldMin, AVector3 WorldMax)
-	: VoxelGrid(VoxelResolution, WorldMin, WorldMax), LightingService(engine,config),
+	: LightingService(engine, config), VoxelGrid(VoxelResolution, WorldMin, WorldMax),
 	gridX((int)VoxelResolution.x), gridY((int)VoxelResolution.y), gridZ((int)VoxelResolution.z),
 	worldMin(WorldMin), worldMax(WorldMax)
 {
 
 	SphericalHarmonics = new SH<SH_Order>();
-	SH_OBJ_Blockers = new BlockerXYZR<MAX_BLOCKER_COUNT>;
-	SH_SKY_Blockers = new Blockers<MAX_BLOCKER_COUNT>;
 
 	SH_Program.Setup((path+"/Shaders/SH.vert").c_str(), (path + "/Shaders/SH.frag").c_str());
 
@@ -137,7 +135,7 @@ void SHLM::VoxelizeMeshesFullInside(Texture const* mipmap, Texture const* instan
 
 void SHLM::MeshSphereDecomposition(Texture const* mipmap, Texture const* instances, ComputeShader& MeshDecomp, int LODmax) {
 
-	auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+	//auto b_compute_t0 = std::chrono::high_resolution_clock::now();
 
 	MeshDecomp.Activate();
 
@@ -189,16 +187,16 @@ void SHLM::MeshSphereDecomposition(Texture const* mipmap, Texture const* instanc
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind
 
-	auto b_compute_t1 = std::chrono::high_resolution_clock::now();
+	//auto b_compute_t1 = std::chrono::high_resolution_clock::now();
 
-	std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
+	//std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
 
 	//std::cout << "\n|_______ 3) MeshSphereDecomposition TIME: " << duration.count() << " ms _____________|\n\n";
 }
 
 void SHLM::ComputeCubemapVisibilitySH(Texture const* instances, ComputeShader& VoxelVisCompute) {
 
-	auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+	//auto b_compute_t0 = std::chrono::high_resolution_clock::now();
 
 	VoxelVisCompute.Activate();
 
@@ -221,9 +219,9 @@ void SHLM::ComputeCubemapVisibilitySH(Texture const* instances, ComputeShader& V
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
 	//glFinish();
 
-	auto b_compute_t1 = std::chrono::high_resolution_clock::now();
+	//auto b_compute_t1 = std::chrono::high_resolution_clock::now();
 
-	std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
+	//std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
 
 	//std::cout << "\n|_______ 4) ComputeCubemapVisibilitySH TIME: " << duration.count() << " ms _____________|\n\n";
 	
@@ -231,7 +229,7 @@ void SHLM::ComputeCubemapVisibilitySH(Texture const* instances, ComputeShader& V
 
 void SHLM::Load_Cubemap_GPU_ComputeShader_Extended() {
 
-	auto b_compute_t0 = std::chrono::high_resolution_clock::now();
+	//auto b_compute_t0 = std::chrono::high_resolution_clock::now();
 
 	GenTextures_Cubemap();
 	SH_Textures_Init();
@@ -277,17 +275,15 @@ void SHLM::Load_Cubemap_GPU_ComputeShader_Extended() {
 	glDeleteBuffers(1, &idxBlockerBuffer);
 	glDeleteBuffers(1, &idxTrigBuffer);
 
-	auto b_compute_t1 = std::chrono::high_resolution_clock::now();
+	//auto b_compute_t1 = std::chrono::high_resolution_clock::now();
 
-	std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
+	//std::chrono::duration<double, std::milli> duration = b_compute_t1 - b_compute_t0;
 
 	//std::cout << "\n|_______ Load_Cubemap_GPU_ComputeShader TOTAL TIME: " << duration.count() << " ms _____________|\n\n";
 }
 
 SHLM::~SHLM() {
 	delete SphericalHarmonics;
-	delete[] SH_OBJ_Blockers;
-	delete[] SH_SKY_Blockers;
 }
 
 
